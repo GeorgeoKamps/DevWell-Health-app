@@ -54,7 +54,6 @@ export default function Dashboard() {
   return (
     <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: "22px" }}>
 
-      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Good morning, George 👋</h1>
@@ -65,7 +64,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Metrics */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px" }}>
         <MetricCard
           icon={Clock}
@@ -87,7 +85,6 @@ export default function Dashboard() {
         <MetricCard icon={Salad} label="Meals logged" value={`${mealsDone} / ${meals.length}`} sub={nextMeal ? `${nextMeal.time} pending` : "All done 🎉"} />
       </div>
 
-      {/* Live nudge */}
       <div style={{ background: "var(--amber-bg)", borderRadius: "12px", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}>
         <span style={{ fontSize: "22px" }}>🪑</span>
         <div style={{ flex: 1 }}>
@@ -104,9 +101,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Two columns */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-        {/* Meals */}
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
             <span style={{ fontWeight: "500", fontSize: "14px", color: "var(--text)", display: "flex", alignItems: "center", gap: "7px" }}><Salad size={15} color="var(--accent)" /> Today's meals</span>
@@ -128,7 +123,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Workout */}
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
             <span style={{ fontWeight: "500", fontSize: "14px", color: "var(--text)", display: "flex", alignItems: "center", gap: "7px" }}><Dumbbell size={15} color="var(--accent)" /> Today's workout</span>

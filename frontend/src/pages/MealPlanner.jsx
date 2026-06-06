@@ -1,43 +1,84 @@
-import { useState } from "react";
-import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame, Check } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame, Check, RefreshCw, WifiOff } from "lucide-react";
+import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
 
-const weekMeals = [
-  { day: "Monday",    breakfast: "Oats + berries",         lunch: "Tuna salad wrap",            dinner: "Grilled salmon + quinoa" },
-  { day: "Tuesday",   breakfast: "Greek yogurt + granola", lunch: "Chicken grain bowl",         dinner: "Stir-fry veggies + tofu" },
-  { day: "Wednesday", breakfast: "Avocado toast + egg",    lunch: "Lentil soup + bread",        dinner: "Turkey meatballs + pasta" },
-  { day: "Thursday",  breakfast: "Smoothie bowl",          lunch: "Caesar salad + chicken",     dinner: "Baked cod + sweet potato" },
-  { day: "Friday",    breakfast: "Overnight oats",         lunch: "Hummus wrap + veggies",      dinner: "Beef stir-fry + rice" },
-  { day: "Saturday",  breakfast: "Pancakes + fruit",       lunch: "Tomato soup + grilled cheese", dinner: "Homemade pizza" },
-  { day: "Sunday",    breakfast: "Eggs + toast + OJ",      lunch: "Leftovers",                  dinner: "Roast chicken + veggies" },
+// Fallback data shown if the backend isn't reachable.
+const SAMPLE_DAYS = [
+  { day: "Monday",    breakfast: "Oats + berries",         lunch: "Tuna salad wrap",              dinner: "Grilled salmon + quinoa", kcal: 1820 },
+  { day: "Tuesday",   breakfast: "Greek yogurt + granola", lunch: "Chicken grain bowl",           dinner: "Stir-fry veggies + tofu", kcal: 1760 },
+  { day: "Wednesday", breakfast: "Avocado toast + egg",    lunch: "Lentil soup + bread",          dinner: "Turkey meatballs + pasta", kcal: 1900 },
+  { day: "Thursday",  breakfast: "Smoothie bowl",          lunch: "Caesar salad + chicken",       dinner: "Baked cod + sweet potato", kcal: 1680 },
+  { day: "Friday",    breakfast: "Overnight oats",         lunch: "Hummus wrap + veggies",        dinner: "Beef stir-fry + rice",    kcal: 1950 },
+  { day: "Saturday",  breakfast: "Pancakes + fruit",       lunch: "Tomato soup + grilled cheese", dinner: "Homemade pizza",          kcal: 2100 },
+  { day: "Sunday",    breakfast: "Eggs + toast + OJ",      lunch: "Leftovers",                    dinner: "Roast chicken + veggies", kcal: 1850 },
 ];
-
-const shopping = ["Chicken breast (500g)", "Salmon fillets (400g)", "Greek yogurt (1kg)", "Quinoa (500g)", "Mixed greens (3 bags)", "Avocados (4)", "Eggs (12)", "Sweet potatoes (4)", "Lentils (400g)", "Oats (1kg)", "Berries (frozen, 500g)", "Olive oil", "Lemons (4)", "Garlic (1 bulb)", "Cherry tomatoes (500g)"];
+const SAMPLE_SHOPPING = ["Chicken breast (500g)", "Salmon fillets (400g)", "Greek yogurt (1kg)", "Quinoa (500g)", "Mixed greens (3 bags)", "Avocados (4)", "Eggs (12)", "Sweet potatoes (4)", "Lentils (400g)", "Oats (1kg)", "Berries (frozen, 500g)", "Olive oil", "Lemons (4)", "Garlic (1 bulb)", "Cherry tomatoes (500g)"];
 
 export default function MealPlanner() {
+  const [days, setDays] = useState(SAMPLE_DAYS);
+  const [shopping, setShopping] = useState(SAMPLE_SHOPPING);
   const [expanded, setExpanded] = useState(null);
   const [showList, setShowList] = useState(false);
   const [checked, setChecked] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [offline, setOffline] = useState(false);
+
+  // Only touches state after the await, so it's safe to run from an effect.
+  const fetchPlan = useCallback(async () => {
+    try {
+      const data = await api.getMealPlan({ diet: "balanced", max_cook_time_min: 30, days: 7 });
+      setDays(data.days);
+      setShopping(data.shopping_list);
+      setOffline(false);
+    } catch {
+      setDays(SAMPLE_DAYS);
+      setShopping(SAMPLE_SHOPPING);
+      setOffline(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Standard fetch-on-mount; the strict set-state-in-effect rule flags this safe pattern.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { fetchPlan(); }, [fetchPlan]);
+
+  const regenerate = () => { setLoading(true); fetchPlan(); };
 
   const gathered = shopping.reduce((n, _, i) => n + (checked[i] ? 1 : 0), 0);
+  const avgKcal = days.length ? Math.round(days.reduce((s, d) => s + (d.kcal || 0), 0) / days.length) : 0;
   const toggleItem = (i) => setChecked((c) => ({ ...c, [i]: !c[i] }));
+
+  const stats = [
+    { icon: Flame, label: "Avg daily kcal", value: `${avgKcal.toLocaleString()} kcal` },
+    { icon: Clock, label: "Avg cook time", value: "22 min" },
+    { icon: Salad, label: "Veg servings/day", value: "5 portions" },
+  ];
 
   return (
     <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: "22px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Meal Planner 🥗</h1>
-          <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>Your AI-generated weekly plan</p>
+          <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px", display: "flex", alignItems: "center", gap: "6px" }}>
+            {loading ? "Loading your plan…" : offline ? <><WifiOff size={12} /> Backend offline — showing sample data</> : "Weekly plan from your DevWell API"}
+          </p>
         </div>
-        <button onClick={() => setShowList((s) => !s)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
-          <ShoppingCart size={14} /> Shopping list
-        </button>
+        <div style={{ display: "flex", gap: "8px" }}>
+          <button onClick={regenerate} disabled={loading} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--surface)", color: "var(--text2)", border: "0.5px solid var(--border)", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>
+            <RefreshCw size={14} style={{ animation: loading ? "mpSpin 0.8s linear infinite" : "none" }} /> Regenerate
+          </button>
+          <button onClick={() => setShowList((s) => !s)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
+            <ShoppingCart size={14} /> Shopping list
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "12px" }}>
-        {[{ icon: Flame, label: "Avg daily kcal", value: "1,850 kcal" }, { icon: Clock, label: "Avg cook time", value: "22 min" }, { icon: Salad, label: "Veg servings/day", value: "5 portions" }].map(({ icon: Icon, label, value }) => (
+        {stats.map(({ icon: Icon, label, value }) => (
           <div key={label} style={card}>
             <div style={{ fontSize: "12px", color: "var(--text3)", marginBottom: "6px", display: "flex", alignItems: "center", gap: "5px" }}><Icon size={13} />{label}</div>
             <div style={{ fontSize: "18px", fontWeight: "600", color: "var(--accent)" }}>{value}</div>
@@ -53,7 +94,7 @@ export default function MealPlanner() {
             <span style={{ fontSize: "12px", color: "var(--text3)" }}>{gathered}/{shopping.length} gathered</span>
           </div>
           <div style={{ height: "5px", background: "var(--surface2)", borderRadius: "3px", overflow: "hidden", marginBottom: "14px" }}>
-            <div style={{ width: `${(gathered / shopping.length) * 100}%`, height: "100%", background: "var(--accent)", transition: "width 0.25s" }} />
+            <div style={{ width: `${shopping.length ? (gathered / shopping.length) * 100 : 0}%`, height: "100%", background: "var(--accent)", transition: "width 0.25s" }} />
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
             {shopping.map((item, i) => (
@@ -75,7 +116,7 @@ export default function MealPlanner() {
 
       {/* Week grid */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {weekMeals.map((day, i) => (
+        {days.map((day, i) => (
           <div key={i} style={card}>
             <div onClick={() => setExpanded(expanded === i ? null : i)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}>
               <span style={{ fontWeight: "500", fontSize: "14px", color: "var(--text)" }}>{day.day}</span>
@@ -85,18 +126,23 @@ export default function MealPlanner() {
               </div>
             </div>
             {expanded === i && (
-              <div style={{ marginTop: "12px", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
-                {[["🌅 Breakfast", day.breakfast], ["☀️ Lunch", day.lunch], ["🌙 Dinner", day.dinner]].map(([label, meal]) => (
-                  <div key={label} style={{ background: "var(--surface2)", borderRadius: "8px", padding: "10px 12px" }}>
-                    <div style={{ fontSize: "11px", color: "var(--text3)", marginBottom: "4px" }}>{label}</div>
-                    <div style={{ fontSize: "13px", color: "var(--text)", fontWeight: "500" }}>{meal}</div>
-                  </div>
-                ))}
+              <div style={{ marginTop: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                  {[["🌅 Breakfast", day.breakfast], ["☀️ Lunch", day.lunch], ["🌙 Dinner", day.dinner]].map(([label, meal]) => (
+                    <div key={label} style={{ background: "var(--surface2)", borderRadius: "8px", padding: "10px 12px" }}>
+                      <div style={{ fontSize: "11px", color: "var(--text3)", marginBottom: "4px" }}>{label}</div>
+                      <div style={{ fontSize: "13px", color: "var(--text)", fontWeight: "500" }}>{meal}</div>
+                    </div>
+                  ))}
+                </div>
+                {day.kcal ? <div style={{ fontSize: "12px", color: "var(--text3)", marginTop: "10px" }}>~{day.kcal.toLocaleString()} kcal for the day</div> : null}
               </div>
             )}
           </div>
         ))}
       </div>
+
+      <style>{`@keyframes mpSpin { to { transform: rotate(360deg) } }`}</style>
     </div>
   );
 }

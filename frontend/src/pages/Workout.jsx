@@ -104,7 +104,6 @@ export default function Workout() {
                 </button>
               </div>
 
-              {/* progress bar */}
               <div style={{ height: "5px", background: "var(--surface2)", borderRadius: "3px", overflow: "hidden", marginBottom: active === pi ? "12px" : "10px" }}>
                 <div style={{ width: `${(count / plan.exercises.length) * 100}%`, height: "100%", background: "var(--accent)", transition: "width 0.25s" }} />
               </div>
