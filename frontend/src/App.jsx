@@ -5,6 +5,7 @@ import Byte from "./components/Byte";
 import Dashboard from "./pages/Dashboard";
 import MealPlanner from "./pages/MealPlanner";
 import Workout from "./pages/Workout";
+import ActivityTimer from "./pages/ActivityTimer";
 import Chat from "./pages/Chat";
 import WeeklyReport from "./pages/WeeklyReport";
 import ActivityLog from "./pages/ActivityLog";
@@ -21,6 +22,7 @@ function Layout() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/meal-planner" element={<MealPlanner />} />
           <Route path="/workout" element={<Workout />} />
+          <Route path="/timer" element={<ActivityTimer />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/report" element={<WeeklyReport />} />
           <Route path="/log" element={<ActivityLog />} />
