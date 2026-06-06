@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Send, Bot, User } from "lucide-react";
+import { api } from "../api/client";
 
 const suggestions = ["What should I eat for high energy?", "Give me a 10-min desk workout", "How much water should I drink?", "Tips for better sleep as a dev"];
 
@@ -19,16 +20,16 @@ export default function Chat() {
     const msg = text || input.trim();
     if (!msg) return;
     setInput("");
-    setMessages(m => [...m, { role: "user", text: msg }]);
+    setMessages((m) => [...m, { role: "user", text: msg }]);
     setLoading(true);
-    // Simulate AI response (replace with real API call later)
-    setTimeout(() => {
-      const responses = {
-        default: "Great question! As a developer spending long hours at your desk, it's important to balance nutrition, movement, and mental breaks. I'd recommend starting with small consistent habits — like a 5-minute stretch every hour and keeping a water bottle on your desk. Want a more specific plan?",
-      };
-      setMessages(m => [...m, { role: "assistant", text: responses.default }]);
+    try {
+      const data = await api.chat(msg);
+      setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
+    } catch {
+      setMessages((m) => [...m, { role: "assistant", text: "I couldn't reach the DevWell server. Make sure the backend is running on http://localhost:8000 and try again." }]);
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (
@@ -38,7 +39,6 @@ export default function Chat() {
         <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>Ask Byte anything about your health</p>
       </div>
 
-      {/* Suggestions */}
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
         {suggestions.map((s, i) => (
           <button key={i} onClick={() => send(s)} style={{ fontSize: "12.5px", padding: "6px 12px", borderRadius: "20px", border: "0.5px solid var(--border)", background: "var(--surface)", color: "var(--text2)", cursor: "pointer", transition: "all 0.15s" }}
@@ -48,7 +48,6 @@ export default function Chat() {
         ))}
       </div>
 
-      {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px", paddingBottom: "16px" }}>
         {messages.map((m, i) => (
           <div key={i} style={{ display: "flex", gap: "10px", alignItems: "flex-start", flexDirection: m.role === "user" ? "row-reverse" : "row" }}>
@@ -71,7 +70,6 @@ export default function Chat() {
         <div ref={bottomRef} />
       </div>
 
-      {/* Input */}
       <div style={{ padding: "16px 0 24px", display: "flex", gap: "10px" }}>
         <input
           value={input}

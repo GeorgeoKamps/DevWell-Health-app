@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Dumbbell, Timer, Flame, CheckCircle2, Circle, ChevronRight, Check } from "lucide-react";
+import { Dumbbell, Timer, Flame, CheckCircle2, Circle, ChevronRight, Check, Sparkles, Loader2 } from "lucide-react";
+import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
+const inputStyle = { padding: "8px 11px", borderRadius: "8px", border: "0.5px solid var(--border)", background: "var(--surface2)", color: "var(--text)", fontSize: "13px", outline: "none" };
 
 const plans = [
   {
@@ -48,6 +50,29 @@ export default function Workout() {
   const [active, setActive] = useState(null);
   const [done, setDone] = useState({});
 
+  // Generator (calls the backend /workout endpoint)
+  const [genMin, setGenMin] = useState(20);
+  const [genFocus, setGenFocus] = useState("back pain");
+  const [genSession, setGenSession] = useState(null);
+  const [genDone, setGenDone] = useState({});
+  const [genLoading, setGenLoading] = useState(false);
+  const [genError, setGenError] = useState(false);
+
+  const generate = async () => {
+    setGenLoading(true);
+    setGenError(false);
+    try {
+      const data = await api.getWorkout({ available_minutes: Number(genMin) || 20, focus: genFocus, level: "easy" });
+      setGenSession(data);
+      setGenDone({});
+    } catch {
+      setGenError(true);
+      setGenSession(null);
+    } finally {
+      setGenLoading(false);
+    }
+  };
+
   const toggle = (pi, ei) => {
     const key = `${pi}-${ei}`;
     setDone((d) => ({ ...d, [key]: !d[key] }));
@@ -71,6 +96,47 @@ export default function Workout() {
       <div>
         <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Workouts 💪</h1>
         <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>Quick sessions designed for your desk life</p>
+      </div>
+
+      {/* AI generator */}
+      <div style={{ ...card, border: "0.5px solid var(--accent)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "12px" }}>
+          <Sparkles size={15} color="var(--accent)" />
+          <h3 style={{ fontSize: "14px", fontWeight: "500", color: "var(--text)" }}>Generate a session</h3>
+          <span style={{ fontSize: "11px", color: "var(--text3)" }}>powered by your DevWell API</span>
+        </div>
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
+          <label style={{ fontSize: "13px", color: "var(--text2)", display: "flex", alignItems: "center", gap: "6px" }}>
+            I have
+            <input type="number" min="5" max="90" value={genMin} onChange={e => setGenMin(e.target.value)} style={{ ...inputStyle, width: "64px" }} /> min
+          </label>
+          <label style={{ fontSize: "13px", color: "var(--text2)", display: "flex", alignItems: "center", gap: "6px", flex: 1, minWidth: "200px" }}>
+            and want to focus on
+            <input type="text" value={genFocus} onChange={e => setGenFocus(e.target.value)} placeholder="e.g. back pain, energy" style={{ ...inputStyle, flex: 1 }} />
+          </label>
+          <button onClick={generate} disabled={genLoading} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "9px 16px", fontSize: "13px", fontWeight: "500", cursor: genLoading ? "default" : "pointer", opacity: genLoading ? 0.7 : 1 }}>
+            {genLoading ? <Loader2 size={14} style={{ animation: "wSpin 0.8s linear infinite" }} /> : <Sparkles size={14} />}
+            {genLoading ? "Generating…" : "Generate"}
+          </button>
+        </div>
+
+        {genError && <p style={{ fontSize: "12.5px", color: "var(--coral-text)", marginTop: "12px" }}>Couldn't reach the backend. Make sure it's running on http://localhost:8000.</p>}
+
+        {genSession && (
+          <div style={{ marginTop: "14px", background: "var(--surface2)", borderRadius: "10px", padding: "14px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+              <span style={{ fontSize: "13.5px", fontWeight: "600", color: "var(--text)" }}>{genSession.title}</span>
+              <span style={{ fontSize: "12px", color: "var(--text3)" }}>{genSession.duration_min} min · {genSession.level}</span>
+            </div>
+            {genSession.exercises.map((ex, ei) => (
+              <div key={ei} onClick={() => setGenDone(d => ({ ...d, [ei]: !d[ei] }))} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "6px 0", cursor: "pointer" }}>
+                {genDone[ei] ? <CheckCircle2 size={15} color="var(--accent)" /> : <Circle size={15} color="var(--text3)" />}
+                <span style={{ flex: 1, fontSize: "13px", color: "var(--text)", textDecoration: genDone[ei] ? "line-through" : "none", opacity: genDone[ei] ? 0.6 : 1 }}>{ex.name}</span>
+                <span style={{ fontSize: "12px", color: "var(--text3)" }}>{ex.sets}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "12px" }}>
@@ -134,6 +200,8 @@ export default function Workout() {
           );
         })}
       </div>
+
+      <style>{`@keyframes wSpin { to { transform: rotate(360deg) } }`}</style>
     </div>
   );
 }

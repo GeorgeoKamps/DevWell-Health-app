@@ -1,7 +1,7 @@
 """Pydantic request/response models for the DevWell API.
 
-Response shapes deliberately mirror what the React frontend already renders,
-so wiring the UI to these endpoints later is a drop-in change.
+Response shapes deliberately mirror what the React frontend renders,
+so wiring the UI to these endpoints is a drop-in change.
 """
 from __future__ import annotations
 
@@ -14,9 +14,14 @@ from pydantic import BaseModel, Field
 # ----- Profile ---------------------------------------------------------------
 class Profile(BaseModel):
     name: str = "George"
-    diet: str = Field("balanced", description="e.g. vegetarian, vegan, keto, balanced")
-    fitness_level: Literal["beginner", "intermediate", "advanced"] = "beginner"
-    work_schedule: str = Field("9-5 desk job", description="free text about the user's day")
+    age: Optional[int] = 27
+    weight_kg: Optional[float] = 78
+    height_cm: Optional[float] = 180
+    diet: str = "No restrictions"
+    fitness_level: str = "Intermediate"
+    goal: str = "Stay healthy"
+    screen_hours: str = "8-10"
+    # AI-relevant extras (used later by meal/workout generation)
     max_cook_time_min: int = 30
     hydration_goal_l: float = 2.5
     sitting_break_interval_min: int = 45
@@ -106,9 +111,27 @@ class LogResponse(BaseModel):
 
 
 # ----- Weekly report ---------------------------------------------------------
+class ReportCard(BaseModel):
+    label: str
+    value: str
+    tone: Literal["accent", "amber", "blue"] = "accent"
+
+
+class ReportInsight(BaseModel):
+    label: str
+    value: str
+    note: str
+    good: bool = False
+
+
 class WeeklyReport(BaseModel):
     week_of: str
-    summary: str
-    stats: dict[str, str]
-    insights: list[str]
+    score: int
+    cards: list[ReportCard]
+    days: list[str]
+    workouts: list[int]
+    water: list[float]
+    sitting: list[float]
+    insights: list[ReportInsight]
+    tip: str
     generated_by: str = "mock"
