@@ -21,6 +21,7 @@ export const api = {
   getNudge: () => request("/nudge"),
   chat: (message) => request("/chat", { method: "POST", body: { message } }),
   log: (entry) => request("/log", { method: "POST", body: entry }),
+  getLogs: () => request("/log"),
   weeklyReport: () => request("/report/weekly"),
 };
 
