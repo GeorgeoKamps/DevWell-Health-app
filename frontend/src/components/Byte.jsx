@@ -49,7 +49,7 @@ export default function Byte() {
         </div>
       )}
       <img
-        src="/byte.png"
+        src="/frog.webp"
         alt="Byte the frog"
         onClick={toggle}
         style={{

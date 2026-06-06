@@ -1,16 +1,16 @@
 import { useState } from "react";
-import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame } from "lucide-react";
+import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame, Check } from "lucide-react";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
 
 const weekMeals = [
-  { day: "Monday",    breakfast: "Oats + berries",           lunch: "Tuna salad wrap",           dinner: "Grilled salmon + quinoa" },
-  { day: "Tuesday",   breakfast: "Greek yogurt + granola",   lunch: "Chicken grain bowl",         dinner: "Stir-fry veggies + tofu" },
-  { day: "Wednesday", breakfast: "Avocado toast + egg",      lunch: "Lentil soup + bread",        dinner: "Turkey meatballs + pasta" },
-  { day: "Thursday",  breakfast: "Smoothie bowl",            lunch: "Caesar salad + chicken",     dinner: "Baked cod + sweet potato" },
-  { day: "Friday",    breakfast: "Overnight oats",           lunch: "Hummus wrap + veggies",      dinner: "Beef stir-fry + rice" },
-  { day: "Saturday",  breakfast: "Pancakes + fruit",         lunch: "Tomato soup + grilled cheese", dinner: "Homemade pizza" },
-  { day: "Sunday",    breakfast: "Eggs + toast + OJ",        lunch: "Leftovers",                  dinner: "Roast chicken + veggies" },
+  { day: "Monday",    breakfast: "Oats + berries",         lunch: "Tuna salad wrap",            dinner: "Grilled salmon + quinoa" },
+  { day: "Tuesday",   breakfast: "Greek yogurt + granola", lunch: "Chicken grain bowl",         dinner: "Stir-fry veggies + tofu" },
+  { day: "Wednesday", breakfast: "Avocado toast + egg",    lunch: "Lentil soup + bread",        dinner: "Turkey meatballs + pasta" },
+  { day: "Thursday",  breakfast: "Smoothie bowl",          lunch: "Caesar salad + chicken",     dinner: "Baked cod + sweet potato" },
+  { day: "Friday",    breakfast: "Overnight oats",         lunch: "Hummus wrap + veggies",      dinner: "Beef stir-fry + rice" },
+  { day: "Saturday",  breakfast: "Pancakes + fruit",       lunch: "Tomato soup + grilled cheese", dinner: "Homemade pizza" },
+  { day: "Sunday",    breakfast: "Eggs + toast + OJ",      lunch: "Leftovers",                  dinner: "Roast chicken + veggies" },
 ];
 
 const shopping = ["Chicken breast (500g)", "Salmon fillets (400g)", "Greek yogurt (1kg)", "Quinoa (500g)", "Mixed greens (3 bags)", "Avocados (4)", "Eggs (12)", "Sweet potatoes (4)", "Lentils (400g)", "Oats (1kg)", "Berries (frozen, 500g)", "Olive oil", "Lemons (4)", "Garlic (1 bulb)", "Cherry tomatoes (500g)"];
@@ -18,6 +18,11 @@ const shopping = ["Chicken breast (500g)", "Salmon fillets (400g)", "Greek yogur
 export default function MealPlanner() {
   const [expanded, setExpanded] = useState(null);
   const [showList, setShowList] = useState(false);
+  const [checked, setChecked] = useState({});
+
+  const gathered = shopping.reduce((n, _, i) => n + (checked[i] ? 1 : 0), 0);
+  const toggleItem = (i) => setChecked((c) => ({ ...c, [i]: !c[i] }));
+
   return (
     <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: "22px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
@@ -25,7 +30,7 @@ export default function MealPlanner() {
           <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Meal Planner 🥗</h1>
           <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>Your AI-generated weekly plan</p>
         </div>
-        <button onClick={() => setShowList(s => !s)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
+        <button onClick={() => setShowList((s) => !s)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
           <ShoppingCart size={14} /> Shopping list
         </button>
       </div>
@@ -43,12 +48,25 @@ export default function MealPlanner() {
       {/* Shopping list */}
       {showList && (
         <div style={card}>
-          <h3 style={{ fontSize: "14px", fontWeight: "500", color: "var(--text)", marginBottom: "12px", display: "flex", alignItems: "center", gap: "7px" }}><ShoppingCart size={15} color="var(--accent)" /> Weekly shopping list</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+            <h3 style={{ fontSize: "14px", fontWeight: "500", color: "var(--text)", display: "flex", alignItems: "center", gap: "7px" }}><ShoppingCart size={15} color="var(--accent)" /> Weekly shopping list</h3>
+            <span style={{ fontSize: "12px", color: "var(--text3)" }}>{gathered}/{shopping.length} gathered</span>
+          </div>
+          <div style={{ height: "5px", background: "var(--surface2)", borderRadius: "3px", overflow: "hidden", marginBottom: "14px" }}>
+            <div style={{ width: `${(gathered / shopping.length) * 100}%`, height: "100%", background: "var(--accent)", transition: "width 0.25s" }} />
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "6px" }}>
             {shopping.map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "center", gap: "7px", fontSize: "13px", color: "var(--text2)" }}>
-                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
-                {item}
+              <div key={i} onClick={() => toggleItem(i)} style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: checked[i] ? "var(--text3)" : "var(--text2)", cursor: "pointer", padding: "3px 0" }}>
+                <span style={{
+                  width: "16px", height: "16px", borderRadius: "5px", flexShrink: 0,
+                  border: checked[i] ? "none" : "1.5px solid var(--border)",
+                  background: checked[i] ? "var(--accent)" : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {checked[i] && <Check size={11} color="#fff" />}
+                </span>
+                <span style={{ textDecoration: checked[i] ? "line-through" : "none" }}>{item}</span>
               </div>
             ))}
           </div>
