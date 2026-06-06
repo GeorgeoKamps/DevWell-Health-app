@@ -47,7 +47,6 @@ export function useSittingTimer(intervalSeconds = 45 * 60, autoStart = true) {
     setBreakDue(true);
   }, [intervalSeconds]);
 
-  // Clear the clock without counting a break (used by the Activity Timer page).
   const reset = useCallback(() => {
     setElapsed(0);
     setBreakDue(false);

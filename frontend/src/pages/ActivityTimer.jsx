@@ -32,7 +32,6 @@ export default function ActivityTimer() {
         <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>Focus in sprints — DevWell taps you when it's time to move</p>
       </div>
 
-      {/* Preset chips */}
       <div style={{ display: "flex", gap: "8px" }}>
         {presets.map((p) => (
           <button
@@ -50,7 +49,6 @@ export default function ActivityTimer() {
         ))}
       </div>
 
-      {/* Ring */}
       <div style={{ position: "relative", width: "220px", height: "220px" }}>
         <svg width="220" height="220" viewBox="0 0 200 200" style={{ transform: "rotate(-90deg)" }}>
           <circle cx="100" cy="100" r={R} fill="none" stroke="var(--surface2)" strokeWidth="12" />
@@ -72,7 +70,6 @@ export default function ActivityTimer() {
         </div>
       </div>
 
-      {/* Controls */}
       <div style={{ display: "flex", gap: "10px" }}>
         <button
           onClick={timer.running ? timer.pause : timer.resume}
@@ -107,7 +104,6 @@ export default function ActivityTimer() {
         </button>
       </div>
 
-      {/* Stats */}
       <div style={{ display: "flex", gap: "12px", width: "100%", maxWidth: "420px" }}>
         <div style={{ ...card, flex: 1, textAlign: "center" }}>
           <div style={{ fontSize: "12px", color: "var(--text3)", marginBottom: "6px", display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}><Coffee size={13} /> Breaks taken</div>

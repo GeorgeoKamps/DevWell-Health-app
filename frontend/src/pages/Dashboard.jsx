@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Flame, Clock, Droplets, Dumbbell, Salad, ArrowRight, CheckCircle2, Circle, Plus, Minus, Armchair } from "lucide-react";
 import { useSittingTimer } from "../hooks/useSittingTimer";
 import NudgeOverlay from "../components/NudgeOverlay";
+import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
 
@@ -12,6 +13,9 @@ const waterBtn = {
 };
 
 const HYDRATION_GOAL = 2.5;
+
+// Fire-and-forget: log to the backend, ignore failures (offline is fine).
+const logSafe = (entry) => { api.log({ ...entry, timestamp: new Date().toISOString() }).catch(() => {}); };
 
 function MetricCard({ icon: Icon, label, value, sub, color, children }) {
   return (
@@ -47,14 +51,28 @@ export default function Dashboard() {
   const exDone = exercises.filter((e) => e.done).length;
   const nextMeal = meals.find((m) => !m.done);
 
-  const toggleMeal = (i) => setMeals((ms) => ms.map((m, idx) => (idx === i ? { ...m, done: !m.done } : m)));
-  const toggleEx = (i) => setExercises((es) => es.map((e, idx) => (idx === i ? { ...e, done: !e.done } : e)));
-  const addWater = (d) => setWater((w) => Math.max(0, Math.round((w + d) * 100) / 100));
+  const toggleMeal = (i) => {
+    const m = meals[i];
+    if (!m.done) logSafe({ type: "meal", detail: `${m.name} (${m.time})` });
+    setMeals((ms) => ms.map((mm, idx) => (idx === i ? { ...mm, done: !mm.done } : mm)));
+  };
+  const toggleEx = (i) => {
+    const e = exercises[i];
+    if (!e.done) logSafe({ type: "workout", detail: e.name });
+    setExercises((es) => es.map((ee, idx) => (idx === i ? { ...ee, done: !ee.done } : ee)));
+  };
+  const addWater = (d) => {
+    if (d > 0) logSafe({ type: "water", detail: "+250ml" });
+    setWater((w) => Math.max(0, Math.round((w + d) * 100) / 100));
+  };
+  const takeBreak = () => {
+    logSafe({ type: "break", detail: "Stretch break" });
+    timer.takeBreak();
+  };
 
   return (
     <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: "22px" }}>
 
-      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Good morning, George 👋</h1>
@@ -65,7 +83,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Metrics */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px" }}>
         <MetricCard
           icon={Clock}
@@ -87,7 +104,6 @@ export default function Dashboard() {
         <MetricCard icon={Salad} label="Meals logged" value={`${mealsDone} / ${meals.length}`} sub={nextMeal ? `${nextMeal.time} pending` : "All done 🎉"} />
       </div>
 
-      {/* Live nudge */}
       <div style={{ background: "var(--amber-bg)", borderRadius: "12px", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}>
         <span style={{ fontSize: "22px" }}>🪑</span>
         <div style={{ flex: 1 }}>
@@ -104,9 +120,7 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Two columns */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
-        {/* Meals */}
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
             <span style={{ fontWeight: "500", fontSize: "14px", color: "var(--text)", display: "flex", alignItems: "center", gap: "7px" }}><Salad size={15} color="var(--accent)" /> Today's meals</span>
@@ -128,7 +142,6 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Workout */}
         <div style={card}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
             <span style={{ fontWeight: "500", fontSize: "14px", color: "var(--text)", display: "flex", alignItems: "center", gap: "7px" }}><Dumbbell size={15} color="var(--accent)" /> Today's workout</span>
@@ -149,7 +162,7 @@ export default function Dashboard() {
       <NudgeOverlay
         open={timer.breakDue}
         seed={timer.breaksTaken}
-        onTakeBreak={timer.takeBreak}
+        onTakeBreak={takeBreak}
         onSnooze={() => timer.snooze()}
         onClose={() => timer.snooze()}
       />
