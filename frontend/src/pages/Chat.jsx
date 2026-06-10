@@ -23,7 +23,8 @@ export default function Chat() {
     setMessages((m) => [...m, { role: "user", text: msg }]);
     setLoading(true);
     try {
-      const data = await api.chat(msg);
+      const history = messages.map((mm) => ({ role: mm.role, text: mm.text }));
+      const data = await api.chat(msg, history);
       setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
     } catch {
       setMessages((m) => [...m, { role: "assistant", text: "I couldn't reach the DevWell server. Make sure the backend is running on http://localhost:8000 and try again." }]);

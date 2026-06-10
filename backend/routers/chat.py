@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from data import mock
+from chains.chat_chain import generate_reply
 from models.schemas import ChatRequest, ChatResponse
 
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -7,7 +7,6 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 @router.post("", response_model=ChatResponse)
 def chat(req: ChatRequest) -> ChatResponse:
-    """Placeholder echo-style reply. Will become a RAG-powered answer grounded
-    in the nutrition/exercise knowledge base."""
-    reply = f"You asked: \"{req.message}\". {mock.CHAT_CANNED}"
-    return ChatResponse(reply=reply, sources=["placeholder/knowledge_base.md"])
+    """Health Q&A. Uses Claude with the Byte persona + conversation history when
+    ANTHROPIC_API_KEY is set; otherwise returns a canned reply."""
+    return generate_reply(req)

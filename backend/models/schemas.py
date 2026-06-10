@@ -71,8 +71,14 @@ class WorkoutResponse(BaseModel):
 
 
 # ----- Chat ------------------------------------------------------------------
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str
+
+
 class ChatRequest(BaseModel):
     message: str
+    history: list[ChatMessage] = []
 
 
 class ChatResponse(BaseModel):

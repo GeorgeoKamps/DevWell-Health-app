@@ -44,3 +44,18 @@ def complete(system: str, user: str, max_tokens: int = 2000) -> str:
         messages=[{"role": "user", "content": user}],
     )
     return "".join(block.text for block in msg.content if getattr(block, "type", None) == "text")
+
+
+def chat(system: str, messages: list[dict], max_tokens: int = 800) -> str:
+    """Multi-turn completion. `messages` is a list of {"role", "content"} dicts.
+    Raises if no client is available."""
+    client = get_client()
+    if client is None:
+        raise RuntimeError("No Anthropic client (missing ANTHROPIC_API_KEY)")
+    msg = client.messages.create(
+        model=get_model(),
+        max_tokens=max_tokens,
+        system=system,
+        messages=messages,
+    )
+    return "".join(block.text for block in msg.content if getattr(block, "type", None) == "text")
