@@ -1,17 +1,12 @@
 from fastapi import APIRouter
-from data import mock
-from models.schemas import WorkoutRequest, WorkoutResponse, Exercise
+from chains.workout_chain import generate_workout
+from models.schemas import WorkoutRequest, WorkoutResponse
 
 router = APIRouter(prefix="/workout", tags=["workout"])
 
 
 @router.post("", response_model=WorkoutResponse)
-def generate_workout(req: WorkoutRequest) -> WorkoutResponse:
-    """Placeholder session. Will become RAG over an exercise knowledge base."""
-    w = mock.WORKOUT
-    return WorkoutResponse(
-        title=w["title"],
-        duration_min=min(req.available_minutes, w["duration_min"]),
-        level=req.level,
-        exercises=[Exercise(**e) for e in w["exercises"]],
-    )
+def workout(req: WorkoutRequest) -> WorkoutResponse:
+    """Generate a tailored workout session. Uses a Claude chain when
+    ANTHROPIC_API_KEY is set; otherwise returns mock data."""
+    return generate_workout(req)
