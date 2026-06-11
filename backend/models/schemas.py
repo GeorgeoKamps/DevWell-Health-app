@@ -155,6 +155,7 @@ class MoodResponse(BaseModel):
     reply: str
     breathing: MoodSuggestion
     physical: MoodSuggestion
+    sources: list[str] = []
     generated_by: str = "mock"
 
 
