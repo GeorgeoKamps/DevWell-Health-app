@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Dumbbell, Timer, Flame, CheckCircle2, Circle, ChevronRight, Check, Sparkles, Loader2 } from "lucide-react";
+import { Dumbbell, Timer, Flame, CheckCircle2, Circle, ChevronRight, Check, Sparkles, Loader2, FileText } from "lucide-react";
 import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
 const inputStyle = { padding: "8px 11px", borderRadius: "8px", border: "0.5px solid var(--border)", background: "var(--surface2)", color: "var(--text)", fontSize: "13px", outline: "none" };
+
+const prettySource = (s) => s.split("/").pop().replace(/\.md$/, "").replace(/_/g, " ");
 
 const plans = [
   {
@@ -103,7 +105,7 @@ export default function Workout() {
         <div style={{ display: "flex", alignItems: "center", gap: "7px", marginBottom: "12px" }}>
           <Sparkles size={15} color="var(--accent)" />
           <h3 style={{ fontSize: "14px", fontWeight: "500", color: "var(--text)" }}>Generate a session</h3>
-          <span style={{ fontSize: "11px", color: "var(--text3)" }}>powered by your DevWell API</span>
+          <span style={{ fontSize: "11px", color: "var(--text3)" }}>grounded in DevWell's knowledge base</span>
         </div>
         <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center" }}>
           <label style={{ fontSize: "13px", color: "var(--text2)", display: "flex", alignItems: "center", gap: "6px" }}>
@@ -135,6 +137,14 @@ export default function Workout() {
                 <span style={{ fontSize: "12px", color: "var(--text3)" }}>{ex.sets}</span>
               </div>
             ))}
+            {genSession.sources && genSession.sources.length > 0 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", marginTop: "10px", paddingTop: "10px", borderTop: "0.5px solid var(--border)" }}>
+                <span style={{ fontSize: "11px", color: "var(--text3)", display: "flex", alignItems: "center", gap: "4px" }}><FileText size={11} /> Sources:</span>
+                {genSession.sources.map((s, si) => (
+                  <span key={si} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "12px", background: "var(--surface)", color: "var(--text2)", border: "0.5px solid var(--border)" }}>{prettySource(s)}</span>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

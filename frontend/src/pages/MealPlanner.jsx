@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame, Check, RefreshCw, WifiOff } from "lucide-react";
+import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame, Check, RefreshCw, WifiOff, FileText } from "lucide-react";
 import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
+
+const prettySource = (s) => s.split("/").pop().replace(/\.md$/, "").replace(/_/g, " ");
 
 // Fallback data shown if the backend isn't reachable.
 const SAMPLE_DAYS = [
@@ -19,29 +21,30 @@ const SAMPLE_SHOPPING = ["Chicken breast (500g)", "Salmon fillets (400g)", "Gree
 export default function MealPlanner() {
   const [days, setDays] = useState(SAMPLE_DAYS);
   const [shopping, setShopping] = useState(SAMPLE_SHOPPING);
+  const [sources, setSources] = useState([]);
   const [expanded, setExpanded] = useState(null);
   const [showList, setShowList] = useState(false);
   const [checked, setChecked] = useState({});
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
 
-  // Only touches state after the await, so it's safe to run from an effect.
   const fetchPlan = useCallback(async () => {
     try {
       const data = await api.getMealPlan({ diet: "balanced", max_cook_time_min: 30, days: 7 });
       setDays(data.days);
       setShopping(data.shopping_list);
+      setSources(data.sources || []);
       setOffline(false);
     } catch {
       setDays(SAMPLE_DAYS);
       setShopping(SAMPLE_SHOPPING);
+      setSources([]);
       setOffline(true);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Standard fetch-on-mount; the strict set-state-in-effect rule flags this safe pattern.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { fetchPlan(); }, [fetchPlan]);
 
@@ -75,6 +78,15 @@ export default function MealPlanner() {
           </button>
         </div>
       </div>
+
+      {sources.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center", marginTop: "-8px" }}>
+          <span style={{ fontSize: "11px", color: "var(--text3)", display: "flex", alignItems: "center", gap: "4px" }}><FileText size={11} /> Grounded in:</span>
+          {sources.map((s, i) => (
+            <span key={i} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "12px", background: "var(--surface2)", color: "var(--text2)", border: "0.5px solid var(--border)" }}>{prettySource(s)}</span>
+          ))}
+        </div>
+      )}
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: "12px" }}>

@@ -8,6 +8,7 @@ import Workout from "./pages/Workout";
 import ActivityTimer from "./pages/ActivityTimer";
 import Chat from "./pages/Chat";
 import Mood from "./pages/Mood";
+import Library from "./pages/Library";
 import WeeklyReport from "./pages/WeeklyReport";
 import ActivityLog from "./pages/ActivityLog";
 import Profile from "./pages/Profile";
@@ -26,6 +27,7 @@ function Layout() {
           <Route path="/timer" element={<ActivityTimer />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/mood" element={<Mood />} />
+          <Route path="/library" element={<Library />} />
           <Route path="/report" element={<WeeklyReport />} />
           <Route path="/log" element={<ActivityLog />} />
           <Route path="/profile" element={<Profile />} />

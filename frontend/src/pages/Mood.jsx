@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { Wind, Activity, Send, Loader2, HeartHandshake } from "lucide-react";
+import { Wind, Activity, Send, Loader2, HeartHandshake, FileText } from "lucide-react";
 import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
+
+const prettySource = (s) => s.split("/").pop().replace(/\.md$/, "").replace(/_/g, " ");
 
 const prompts = [
   "I've been debugging for hours and I'm losing it",
@@ -94,6 +96,14 @@ export default function Mood() {
             <SuggestionCard icon={Wind} label="Breathing" title={result.breathing.title} detail={result.breathing.detail} />
             <SuggestionCard icon={Activity} label="Physical reset" title={result.physical.title} detail={result.physical.detail} />
           </div>
+          {result.sources && result.sources.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
+              <span style={{ fontSize: "11px", color: "var(--text3)", display: "flex", alignItems: "center", gap: "4px" }}><FileText size={11} /> Based on:</span>
+              {result.sources.map((s, i) => (
+                <span key={i} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "12px", background: "var(--surface2)", color: "var(--text2)", border: "0.5px solid var(--border)" }}>{prettySource(s)}</span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

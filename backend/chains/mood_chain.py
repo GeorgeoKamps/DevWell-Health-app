@@ -1,22 +1,29 @@
-"""Mood / stress helper chain.
+"""Mood / stress helper chain — RAG-grounded.
 
-Detects the user's emotional state from a short message and returns an
-empathetic reply plus one breathing exercise and one physical reset.
+Detects the user's emotional state and returns an empathetic reply plus one
+breathing exercise and one physical reset, grounded in the mental-wellness
+knowledge base. Retrieval is local, so sources are returned even in mock mode.
 
 Safety: the system prompt instructs the model to NOT respond with mere
 "exercises" when a message suggests a mental-health crisis or self-harm —
-instead it expresses care and encourages reaching out to a professional or
-trusted person. Falls back to a gentle generic response on any failure.
+instead it expresses care and encourages reaching out to a professional.
 """
 from clients import claude
 from chains.jsonutil import extract_json
 from models.schemas import MoodRequest, MoodResponse, MoodSuggestion
 
+try:
+    from rag.retriever import retrieve
+except Exception:  # pragma: no cover
+    def retrieve(query, k=2):
+        return []
+
 SYSTEM = (
-    "You are a calm, supportive companion inside DevWell, helping developers with everyday "
-    "work stress, frustration, and burnout. Read the user's message and infer their mood in "
-    "one or two words. Reply with brief, warm empathy (1-2 sentences), then give one short "
-    "breathing exercise and one quick physical reset they can do at their desk.\n"
+    "You are Byte 🐸, a calm, supportive companion inside DevWell, helping developers with "
+    "everyday work stress, frustration, and burnout. Read the user's message and infer their "
+    "mood in one or two words. Reply with brief, warm empathy (1-2 sentences), then give one "
+    "short breathing exercise and one quick physical reset they can do at their desk. Prefer the "
+    "reference snippets below when relevant.\n"
     "IMPORTANT SAFETY: if the message suggests a mental-health crisis, severe depression, "
     "hopelessness, or any thought of self-harm, do NOT treat it as ordinary stress. In that "
     "case set mood to 'distress', make the reply gently express concern and encourage them to "
@@ -35,22 +42,31 @@ _FALLBACK = MoodResponse(
 
 
 def detect_mood(req: MoodRequest) -> MoodResponse:
-    if not claude.ai_enabled():
-        return _FALLBACK
     try:
+        hits = retrieve(f"{req.message} stress focus mental wellness", k=2)
+    except Exception:
+        hits = []
+    sources = list(dict.fromkeys(h["source"] for h in hits))
+
+    if not claude.ai_enabled():
+        return _FALLBACK.model_copy(update={"sources": sources})
+    try:
+        context = "\n\n".join(f"[{h['source']}]\n{h['text']}" for h in hits)
+        system = SYSTEM + (f"\n\n--- Knowledge base snippets ---\n{context}" if context else "")
         user = (
             f'The user said: "{req.message}"\n'
             'Return JSON shaped exactly: {"mood": "frustrated", "reply": "...", '
             '"breathing": {"title": "...", "detail": "..."}, '
             '"physical": {"title": "...", "detail": "..."}}'
         )
-        data = extract_json(claude.complete(SYSTEM, user, max_tokens=600))
+        data = extract_json(claude.complete(system, user, max_tokens=600))
         return MoodResponse(
             mood=data["mood"],
             reply=data["reply"],
             breathing=MoodSuggestion(**data["breathing"]),
             physical=MoodSuggestion(**data["physical"]),
+            sources=sources,
             generated_by="claude",
         )
     except Exception:
-        return _FALLBACK
+        return _FALLBACK.model_copy(update={"sources": sources})
