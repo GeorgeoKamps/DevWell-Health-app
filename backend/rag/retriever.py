@@ -142,3 +142,15 @@ def list_sources() -> dict:
         if c["source"] not in cats[c["category"]]:
             cats[c["category"]].append(c["source"])
     return cats
+
+
+def read_doc(source: str):
+    """Return the full text of a knowledge-base doc, or None if unknown.
+    Whitelisted against known sources to avoid path traversal."""
+    match = next((c for c in load_chunks() if c["source"] == source), None)
+    if not match:
+        return None
+    path = os.path.join(KB_DIR, *source.split("/"))
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    return {"source": source, "category": match["category"], "text": text}

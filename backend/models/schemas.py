@@ -176,3 +176,9 @@ class SearchResponse(BaseModel):
 class KnowledgeResponse(BaseModel):
     backend: str
     categories: dict[str, list[str]]
+
+
+class KnowledgeDoc(BaseModel):
+    source: str
+    category: str
+    text: str

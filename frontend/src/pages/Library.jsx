@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Search, BookOpen, FileText, Loader2 } from "lucide-react";
+import { Search, BookOpen, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
@@ -12,8 +12,9 @@ const catColor = {
   ergonomics: { bg: "var(--blue-bg)", text: "var(--blue-text)" },
   mental_wellness: { bg: "var(--coral-bg)", text: "var(--coral-text)" },
 };
+const cat = (c) => catColor[c] || { bg: "var(--surface2)", text: "var(--text2)" };
 
-const suggestions = ["high protein meal", "back pain stretches", "monitor setup", "manage stress"];
+const suggestions = ["high protein meal", "back pain stretches", "screen eye strain", "afternoon energy slump"];
 
 export default function Library() {
   const [query, setQuery] = useState("");
@@ -22,6 +23,9 @@ export default function Library() {
   const [searched, setSearched] = useState(false);
   const [categories, setCategories] = useState({});
   const [offline, setOffline] = useState(false);
+  const [openSource, setOpenSource] = useState(null);
+  const [docText, setDocText] = useState("");
+  const [docLoading, setDocLoading] = useState(false);
 
   const loadKnowledge = useCallback(async () => {
     try {
@@ -54,7 +58,20 @@ export default function Library() {
     }
   };
 
-  const cat = (c) => catColor[c] || { bg: "var(--surface2)", text: "var(--text2)" };
+  const openDoc = async (source) => {
+    if (openSource === source) { setOpenSource(null); return; }
+    setOpenSource(source);
+    setDocLoading(true);
+    setDocText("");
+    try {
+      const data = await api.knowledgeDoc(source);
+      setDocText(data.text);
+    } catch {
+      setDocText("Couldn't load this document.");
+    } finally {
+      setDocLoading(false);
+    }
+  };
 
   return (
     <div style={{ padding: "28px 32px", display: "flex", flexDirection: "column", gap: "20px", maxWidth: "820px" }}>
@@ -63,7 +80,7 @@ export default function Library() {
           <BookOpen size={20} color="var(--accent)" /> Knowledge Library
         </h1>
         <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>
-          {offline ? "Backend offline — start it to search" : "Search the same curated tips that ground Byte's answers"}
+          {offline ? "Backend offline — start it to search" : "Search or read the curated tips that ground Byte's answers"}
         </p>
       </div>
 
@@ -84,7 +101,8 @@ export default function Library() {
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
+        {searched && <button onClick={() => { setSearched(false); setResults([]); }} style={{ fontSize: "12.5px", padding: "6px 12px", borderRadius: "20px", border: "0.5px solid var(--accent)", background: "var(--accent-bg)", color: "var(--accent-text)", cursor: "pointer" }}>← Browse all</button>}
         {suggestions.map((s, i) => (
           <button key={i} onClick={() => runSearch(s)} style={{ fontSize: "12.5px", padding: "6px 12px", borderRadius: "20px", border: "0.5px solid var(--border)", background: "var(--surface)", color: "var(--text2)", cursor: "pointer" }}>
             {s}
@@ -101,8 +119,17 @@ export default function Library() {
                 <span style={{ fontSize: "12px", color: "var(--text3)" }}>{docs.length} doc{docs.length !== 1 ? "s" : ""}</span>
               </div>
               {docs.map((d) => (
-                <div key={d} onClick={() => runSearch(prettySource(d))} style={{ display: "flex", alignItems: "center", gap: "7px", fontSize: "13px", color: "var(--text2)", padding: "4px 0", cursor: "pointer" }}>
-                  <FileText size={13} color="var(--text3)" /> {prettySource(d)}
+                <div key={d}>
+                  <div onClick={() => openDoc(d)} style={{ display: "flex", alignItems: "center", gap: "7px", fontSize: "13px", color: "var(--text2)", padding: "5px 0", cursor: "pointer" }}>
+                    <FileText size={13} color="var(--text3)" />
+                    <span style={{ flex: 1 }}>{prettySource(d)}</span>
+                    {openSource === d ? <ChevronUp size={13} color="var(--text3)" /> : <ChevronDown size={13} color="var(--text3)" />}
+                  </div>
+                  {openSource === d && (
+                    <div style={{ background: "var(--surface2)", borderRadius: "8px", padding: "12px", margin: "4px 0 8px", fontSize: "12.5px", color: "var(--text2)", lineHeight: "1.55", whiteSpace: "pre-wrap", maxHeight: "260px", overflowY: "auto" }}>
+                      {docLoading ? "Loading…" : docText}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
