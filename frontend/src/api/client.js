@@ -22,6 +22,7 @@ export const api = {
   chat: (message, history = []) => request("/chat", { method: "POST", body: { message, history } }),
   log: (entry) => request("/log", { method: "POST", body: entry }),
   getLogs: () => request("/log"),
+  deleteLog: (id) => request(`/log/${id}`, { method: "DELETE" }),
   weeklyReport: () => request("/report/weekly"),
   mood: (message) => request("/mood", { method: "POST", body: { message } }),
   search: (q, k = 5) => request(`/search?q=${encodeURIComponent(q)}&k=${k}`),

@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from data import store
 from models.schemas import LogRequest, LogResponse, LogEntry
 
@@ -14,3 +14,10 @@ def add_log(req: LogRequest) -> LogResponse:
 @router.get("", response_model=list[LogEntry])
 def get_logs() -> list[LogEntry]:
     return store.list_logs()
+
+
+@router.delete("/{log_id}")
+def delete_log(log_id: int) -> dict:
+    if not store.delete_log(log_id):
+        raise HTTPException(status_code=404, detail="Log entry not found")
+    return {"ok": True, "total_logs": len(store.list_logs())}

@@ -68,3 +68,14 @@ def list_logs() -> list[LogEntry]:
     with SessionLocal() as db:
         rows = db.query(LogRow).order_by(LogRow.id).all()
         return [LogEntry(id=r.id, type=r.type, detail=r.detail, timestamp=r.timestamp) for r in rows]
+
+
+def delete_log(log_id: int) -> bool:
+    """Delete a log by id. Returns True if a row was removed."""
+    with SessionLocal() as db:
+        row = db.get(LogRow, log_id)
+        if row is None:
+            return False
+        db.delete(row)
+        db.commit()
+        return True
