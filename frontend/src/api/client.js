@@ -23,6 +23,7 @@ export const api = {
   log: (entry) => request("/log", { method: "POST", body: entry }),
   getLogs: () => request("/log"),
   weeklyReport: () => request("/report/weekly"),
+  mood: (message) => request("/mood", { method: "POST", body: { message } }),
 };
 
 export { API_URL };
