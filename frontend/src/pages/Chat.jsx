@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User } from "lucide-react";
+import { Send, Bot, User, FileText } from "lucide-react";
 import { api } from "../api/client";
 
 const suggestions = ["What should I eat for high energy?", "Give me a 10-min desk workout", "How much water should I drink?", "Tips for better sleep as a dev"];
@@ -7,6 +7,8 @@ const suggestions = ["What should I eat for high energy?", "Give me a 10-min des
 const initialMessages = [
   { role: "assistant", text: "Hey! I'm your DevWell health assistant 🐸 Ask me anything about nutrition, exercise, or staying healthy at your desk." },
 ];
+
+const prettySource = (s) => s.split("/").pop().replace(/\.md$/, "").replace(/_/g, " ");
 
 export default function Chat() {
   const [messages, setMessages] = useState(initialMessages);
@@ -20,12 +22,12 @@ export default function Chat() {
     const msg = text || input.trim();
     if (!msg) return;
     setInput("");
+    const history = messages.map((mm) => ({ role: mm.role, text: mm.text }));
     setMessages((m) => [...m, { role: "user", text: msg }]);
     setLoading(true);
     try {
-      const history = messages.map((mm) => ({ role: mm.role, text: mm.text }));
       const data = await api.chat(msg, history);
-      setMessages((m) => [...m, { role: "assistant", text: data.reply }]);
+      setMessages((m) => [...m, { role: "assistant", text: data.reply, sources: data.sources || [] }]);
     } catch {
       setMessages((m) => [...m, { role: "assistant", text: "I couldn't reach the DevWell server. Make sure the backend is running on http://localhost:8000 and try again." }]);
     } finally {
@@ -37,7 +39,7 @@ export default function Chat() {
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", padding: "28px 32px 0" }}>
       <div style={{ marginBottom: "20px" }}>
         <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Health Chat 💬</h1>
-        <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>Ask Byte anything about your health</p>
+        <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>Ask Byte anything — answers are grounded in DevWell's knowledge base</p>
       </div>
 
       <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "16px" }}>
@@ -55,8 +57,18 @@ export default function Chat() {
             <div style={{ width: "32px", height: "32px", borderRadius: "50%", background: m.role === "assistant" ? "var(--accent-bg)" : "var(--surface2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: m.role === "assistant" ? "var(--accent)" : "var(--text3)" }}>
               {m.role === "assistant" ? <Bot size={16} /> : <User size={16} />}
             </div>
-            <div style={{ maxWidth: "70%", padding: "11px 14px", borderRadius: m.role === "user" ? "12px 12px 4px 12px" : "12px 12px 12px 4px", background: m.role === "user" ? "var(--accent)" : "var(--surface)", color: m.role === "user" ? "white" : "var(--text)", fontSize: "13.5px", lineHeight: "1.6", border: m.role === "user" ? "none" : "0.5px solid var(--border)", boxShadow: "var(--shadow)" }}>
-              {m.text}
+            <div style={{ maxWidth: "70%", display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start", gap: "6px" }}>
+              <div style={{ padding: "11px 14px", borderRadius: m.role === "user" ? "12px 12px 4px 12px" : "12px 12px 12px 4px", background: m.role === "user" ? "var(--accent)" : "var(--surface)", color: m.role === "user" ? "white" : "var(--text)", fontSize: "13.5px", lineHeight: "1.6", border: m.role === "user" ? "none" : "0.5px solid var(--border)", boxShadow: "var(--shadow)" }}>
+                {m.text}
+              </div>
+              {m.sources && m.sources.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
+                  <span style={{ fontSize: "11px", color: "var(--text3)", display: "flex", alignItems: "center", gap: "4px" }}><FileText size={11} /> Sources:</span>
+                  {m.sources.map((s, si) => (
+                    <span key={si} style={{ fontSize: "11px", padding: "2px 8px", borderRadius: "12px", background: "var(--surface2)", color: "var(--text2)", border: "0.5px solid var(--border)" }}>{prettySource(s)}</span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
