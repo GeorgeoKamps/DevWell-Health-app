@@ -19,12 +19,12 @@ try:
 except ImportError:
     pass
 
-from routers import profile, meal_plan, workout, nudge, chat, log, report, mood
+from routers import profile, meal_plan, workout, nudge, chat, log, report, mood, search
 
 app = FastAPI(
     title="DevWell API",
     description="The health companion for developers.",
-    version="0.2.0",
+    version="0.3.0",
 )
 
 _origins = os.getenv(
@@ -39,13 +39,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (profile, meal_plan, workout, nudge, chat, log, report, mood):
+for r in (profile, meal_plan, workout, nudge, chat, log, report, mood, search):
     app.include_router(r.router)
 
 
 @app.get("/", tags=["meta"])
 def root() -> dict:
-    return {"app": "DevWell API", "version": "0.2.0", "docs": "/docs", "status": "ok"}
+    return {"app": "DevWell API", "version": "0.3.0", "docs": "/docs", "status": "ok"}
 
 
 @app.get("/health", tags=["meta"])

@@ -132,3 +132,13 @@ def get_retriever():
 
 def retrieve(query: str, k: int = 4) -> list[dict]:
     return get_retriever().retrieve(query, k)
+
+
+def list_sources() -> dict:
+    """Return {category: [source, ...]} for browsing the knowledge base."""
+    cats: dict[str, list[str]] = {}
+    for c in load_chunks():
+        cats.setdefault(c["category"], [])
+        if c["source"] not in cats[c["category"]]:
+            cats[c["category"]].append(c["source"])
+    return cats

@@ -1,8 +1,4 @@
-"""Pydantic request/response models for the DevWell API.
-
-Response shapes deliberately mirror what the React frontend renders,
-so wiring the UI to these endpoints is a drop-in change.
-"""
+"""Pydantic request/response models for the DevWell API."""
 from __future__ import annotations
 
 from datetime import datetime
@@ -21,7 +17,6 @@ class Profile(BaseModel):
     fitness_level: str = "Intermediate"
     goal: str = "Stay healthy"
     screen_hours: str = "8-10"
-    # AI-relevant extras (used later by meal/workout generation)
     max_cook_time_min: int = 30
     hydration_goal_l: float = 2.5
     sitting_break_interval_min: int = 45
@@ -153,3 +148,30 @@ class MoodSuggestion(BaseModel):
 
 class MoodRequest(BaseModel):
     message: str
+
+
+class MoodResponse(BaseModel):
+    mood: str
+    reply: str
+    breathing: MoodSuggestion
+    physical: MoodSuggestion
+    generated_by: str = "mock"
+
+
+# ----- Knowledge base / search ----------------------------------------------
+class SearchResult(BaseModel):
+    text: str
+    source: str
+    category: str
+    score: Optional[float] = None
+
+
+class SearchResponse(BaseModel):
+    query: str
+    backend: str
+    results: list[SearchResult]
+
+
+class KnowledgeResponse(BaseModel):
+    backend: str
+    categories: dict[str, list[str]]

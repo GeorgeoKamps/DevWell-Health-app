@@ -24,6 +24,8 @@ export const api = {
   getLogs: () => request("/log"),
   weeklyReport: () => request("/report/weekly"),
   mood: (message) => request("/mood", { method: "POST", body: { message } }),
+  search: (q, k = 5) => request(`/search?q=${encodeURIComponent(q)}&k=${k}`),
+  knowledge: () => request("/knowledge"),
 };
 
 export { API_URL };
