@@ -47,6 +47,7 @@ class DayPlan(BaseModel):
 class MealPlanResponse(BaseModel):
     days: list[DayPlan]
     shopping_list: list[str]
+    sources: list[str] = []
     generated_by: str = "mock"
 
 
@@ -67,6 +68,7 @@ class WorkoutResponse(BaseModel):
     duration_min: int
     level: str
     exercises: list[Exercise]
+    sources: list[str] = []
     generated_by: str = "mock"
 
 
@@ -151,11 +153,3 @@ class MoodSuggestion(BaseModel):
 
 class MoodRequest(BaseModel):
     message: str
-
-
-class MoodResponse(BaseModel):
-    mood: str
-    reply: str
-    breathing: MoodSuggestion
-    physical: MoodSuggestion
-    generated_by: str = "mock"
