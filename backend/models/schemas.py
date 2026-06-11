@@ -71,8 +71,14 @@ class WorkoutResponse(BaseModel):
 
 
 # ----- Chat ------------------------------------------------------------------
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    text: str
+
+
 class ChatRequest(BaseModel):
     message: str
+    history: list[ChatMessage] = []
 
 
 class ChatResponse(BaseModel):
@@ -134,4 +140,22 @@ class WeeklyReport(BaseModel):
     sitting: list[float]
     insights: list[ReportInsight]
     tip: str
+    generated_by: str = "mock"
+
+
+# ----- Mood / stress ---------------------------------------------------------
+class MoodSuggestion(BaseModel):
+    title: str
+    detail: str
+
+
+class MoodRequest(BaseModel):
+    message: str
+
+
+class MoodResponse(BaseModel):
+    mood: str
+    reply: str
+    breathing: MoodSuggestion
+    physical: MoodSuggestion
     generated_by: str = "mock"

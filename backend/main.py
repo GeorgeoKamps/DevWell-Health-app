@@ -1,7 +1,4 @@
-"""DevWell API — FastAPI backend (scaffold phase).
-
-All routes return placeholder data for now. The AI layer (Claude prompt chains,
-RAG, the sitting-alert agent) gets wired in on top of these stubs later.
+"""DevWell API — FastAPI backend.
 
 Run locally:
     cd backend
@@ -19,15 +16,15 @@ from fastapi.middleware.cors import CORSMiddleware
 try:
     from dotenv import load_dotenv
     load_dotenv()
-except ImportError:  # python-dotenv optional at runtime
+except ImportError:
     pass
 
-from routers import profile, meal_plan, workout, nudge, chat, log, report
+from routers import profile, meal_plan, workout, nudge, chat, log, report, mood
 
 app = FastAPI(
     title="DevWell API",
-    description="The health companion for developers — backend scaffold.",
-    version="0.1.0",
+    description="The health companion for developers.",
+    version="0.2.0",
 )
 
 _origins = os.getenv(
@@ -42,13 +39,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-for r in (profile, meal_plan, workout, nudge, chat, log, report):
+for r in (profile, meal_plan, workout, nudge, chat, log, report, mood):
     app.include_router(r.router)
 
 
 @app.get("/", tags=["meta"])
 def root() -> dict:
-    return {"app": "DevWell API", "version": "0.1.0", "docs": "/docs", "status": "ok"}
+    return {"app": "DevWell API", "version": "0.2.0", "docs": "/docs", "status": "ok"}
 
 
 @app.get("/health", tags=["meta"])

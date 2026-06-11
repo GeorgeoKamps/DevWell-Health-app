@@ -1,6 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-import { LayoutDashboard, Salad, Dumbbell, Timer, MessageCircle, BarChart2, History, User, HeartPulse, Moon, Sun } from "lucide-react";
+import { LayoutDashboard, Salad, Dumbbell, Timer, MessageCircle, HeartHandshake, BarChart2, History, User, HeartPulse, Moon, Sun } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard",      path: "/dashboard",    icon: LayoutDashboard },
@@ -8,6 +8,7 @@ const navItems = [
   { label: "Workouts",       path: "/workout",      icon: Dumbbell },
   { label: "Activity Timer", path: "/timer",        icon: Timer },
   { label: "Health Chat",    path: "/chat",         icon: MessageCircle },
+  { label: "Mood Check",     path: "/mood",         icon: HeartHandshake },
 ];
 const trackingItems = [
   { label: "Weekly Report", path: "/report", icon: BarChart2 },

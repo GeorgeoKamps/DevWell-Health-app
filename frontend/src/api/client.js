@@ -19,10 +19,11 @@ export const api = {
   getProfile: () => request("/profile"),
   saveProfile: (profile) => request("/profile", { method: "POST", body: profile }),
   getNudge: () => request("/nudge"),
-  chat: (message) => request("/chat", { method: "POST", body: { message } }),
+  chat: (message, history = []) => request("/chat", { method: "POST", body: { message, history } }),
   log: (entry) => request("/log", { method: "POST", body: entry }),
   getLogs: () => request("/log"),
   weeklyReport: () => request("/report/weekly"),
+  mood: (message) => request("/mood", { method: "POST", body: { message } }),
 };
 
 export { API_URL };
