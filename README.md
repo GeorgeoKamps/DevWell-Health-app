@@ -173,12 +173,15 @@ pytest
 | `POST` | `/profile` | Save user preferences |
 | `GET` | `/profile` | Get user profile |
 | `POST` | `/meal-plan` | Generate weekly meal plan |
+| `POST` | `/meal-plan/export` | Export a plan + shopping list to PDF / Markdown |
 | `POST` | `/workout` | Generate a workout session |
 | `POST` | `/chat` | RAG-powered health chat |
 | `POST` | `/mood` | Mood / stress reset suggestions |
 | `POST` | `/log` | Log a meal, break, or workout |
 | `DELETE` | `/log/{id}` | Remove a log entry |
 | `GET` | `/report/weekly` | Get weekly health report |
+| `GET` | `/stats` | Real streaks + this-week activity counts |
+| `GET` | `/stats/report` | Doctor-friendly progress PDF/MD (`period=weekly\|monthly`) |
 | `GET` | `/search` · `/knowledge` | Browse / search the knowledge base |
 | `POST` | `/nudge/heartbeat` | Tell the agent the tab is active |
 | `GET` | `/nudge/stream` | **SSE** stream of real-time break nudges |
@@ -217,7 +220,9 @@ The AI can call tools like exporting a shopping list to PDF, fetching your weekl
 - [x] SQLite persistence (profile + activity log)
 - [x] Health chat (RAG-grounded) + Mood/stress tips
 - [x] Backend test suite + Docker / docker-compose
-- [ ] Shopping list PDF export
+- [x] Shopping list PDF / Markdown export
+- [x] Real streaks + activity stats (`/stats`)
+- [x] Doctor-friendly weekly/monthly progress report (PDF / Markdown)
 - [ ] Calendar integration for workout scheduling
 - [ ] GitHub activity tracking (code-heavy day → more stretch reminders)
 
