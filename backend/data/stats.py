@@ -79,3 +79,53 @@ def compute_stats(today: date | None = None) -> StatsResponse:
         logged_today=today in active,
         this_week=week,
     )
+
+
+def compute_progress(period_days: int, today: date | None = None) -> "ProgressReport":
+    """Aggregate the activity log over a trailing window (e.g. 7 or 30 days)
+    into a doctor-friendly progress report: per-day breakdown + totals +
+    streaks. Streaks are computed over the full history, not just the window."""
+    from models.schemas import ProgressReport, DayActivity, WeekCounts
+
+    today = today or date.today()
+    start = today - timedelta(days=period_days - 1)  # inclusive window
+    logs = store.list_logs()
+    active_all = _active_dates(logs)
+
+    # per-day tallies within the window
+    per_day: dict[date, dict[str, int]] = {
+        start + timedelta(days=i): {"meals": 0, "workouts": 0, "water": 0, "breaks": 0}
+        for i in range(period_days)
+    }
+    totals = WeekCounts()
+    for e in logs:
+        if e.timestamp is None or e.type not in _WEEK_TYPES:
+            continue
+        d = _as_date(e.timestamp)
+        if start <= d <= today:
+            key = _WEEK_TYPES[e.type]
+            per_day[d][key] += 1
+            setattr(totals, key, getattr(totals, key) + 1)
+
+    daily = []
+    active_days = 0
+    for d in sorted(per_day):
+        c = per_day[d]
+        total = c["meals"] + c["workouts"] + c["water"] + c["breaks"]
+        if total > 0:
+            active_days += 1
+        daily.append(DayActivity(date=d.isoformat(), total=total, **c))
+
+    label = "Weekly" if period_days <= 7 else ("Monthly" if period_days <= 31 else f"{period_days}-day")
+    return ProgressReport(
+        patient_name=store.get_profile().name or "DevWell user",
+        period_label=label,
+        start_date=start.isoformat(),
+        end_date=today.isoformat(),
+        days=period_days,
+        current_streak=_current_streak(active_all, today),
+        longest_streak=_longest_streak(active_all),
+        active_days=active_days,
+        totals=totals,
+        daily=daily,
+    )

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { TrendingUp, Award, WifiOff } from "lucide-react";
+import { TrendingUp, Award, WifiOff, FileDown } from "lucide-react";
 import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
@@ -53,6 +53,19 @@ function StatRow({ label, value, note, good }) {
 export default function WeeklyReport() {
   const [report, setReport] = useState(SAMPLE);
   const [offline, setOffline] = useState(false);
+  const [downloading, setDownloading] = useState(null);
+
+  // Download a doctor-friendly PDF over the chosen period (real log data).
+  const downloadReport = async (period) => {
+    setDownloading(period);
+    try {
+      await api.exportProgress(period, "pdf");
+    } catch {
+      /* backend unreachable */
+    } finally {
+      setDownloading(null);
+    }
+  };
 
   const loadReport = useCallback(async () => {
     try {
@@ -86,6 +99,19 @@ export default function WeeklyReport() {
         <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent-bg)", color: "var(--accent-text)", fontSize: "13px", fontWeight: "500", padding: "6px 14px", borderRadius: "20px" }}>
           <Award size={14} /> Score: {report.score} / 100
         </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "12px 16px", boxShadow: "var(--shadow)" }}>
+        <span style={{ fontSize: "13px", color: "var(--text2)", display: "flex", alignItems: "center", gap: "7px" }}>
+          <FileDown size={15} color="var(--accent)" /> Progress report for your doctor
+        </span>
+        <span style={{ flex: 1 }} />
+        <button onClick={() => downloadReport("weekly")} disabled={!!downloading} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: downloading ? "default" : "pointer", opacity: downloading ? 0.6 : 1 }}>
+          <FileDown size={14} /> {downloading === "weekly" ? "Preparing…" : "Last 7 days (PDF)"}
+        </button>
+        <button onClick={() => downloadReport("monthly")} disabled={!!downloading} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--surface2)", color: "var(--text2)", border: "0.5px solid var(--border)", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: downloading ? "default" : "pointer", opacity: downloading ? 0.6 : 1 }}>
+          <FileDown size={14} /> {downloading === "monthly" ? "Preparing…" : "Last 30 days (PDF)"}
+        </button>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "12px" }}>
