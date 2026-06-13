@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame, Check, RefreshCw, WifiOff, FileText } from "lucide-react";
+import { Salad, ShoppingCart, ChevronDown, ChevronUp, Clock, Flame, Check, RefreshCw, WifiOff, FileText, Download } from "lucide-react";
 import { api } from "../api/client";
 
 const card = { background: "var(--surface)", border: "0.5px solid var(--border)", borderRadius: "12px", padding: "16px", boxShadow: "var(--shadow)" };
@@ -27,6 +27,7 @@ export default function MealPlanner() {
   const [checked, setChecked] = useState({});
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
+  const [exporting, setExporting] = useState(null);
 
   const fetchPlan = useCallback(async () => {
     try {
@@ -49,6 +50,18 @@ export default function MealPlanner() {
   useEffect(() => { fetchPlan(); }, [fetchPlan]);
 
   const regenerate = () => { setLoading(true); fetchPlan(); };
+
+  // Send the plan we're showing to the backend and download it as a file.
+  const exportPlan = async (format) => {
+    setExporting(format);
+    try {
+      await api.exportMealPlan({ days, shopping_list: shopping, sources }, format);
+    } catch {
+      /* backend unreachable — nothing to download */
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const gathered = shopping.reduce((n, _, i) => n + (checked[i] ? 1 : 0), 0);
   const avgKcal = days.length ? Math.round(days.reduce((s, d) => s + (d.kcal || 0), 0) / days.length) : 0;
@@ -75,6 +88,12 @@ export default function MealPlanner() {
           </button>
           <button onClick={() => setShowList((s) => !s)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--accent)", color: "white", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: "pointer" }}>
             <ShoppingCart size={14} /> Shopping list
+          </button>
+          <button onClick={() => exportPlan("pdf")} disabled={offline || exporting} title={offline ? "Connect to the backend to export" : "Download as PDF"} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--surface)", color: "var(--text2)", border: "0.5px solid var(--border)", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: offline || exporting ? "default" : "pointer", opacity: offline || exporting ? 0.6 : 1 }}>
+            <Download size={14} style={{ animation: exporting === "pdf" ? "mpSpin 0.8s linear infinite" : "none" }} /> {exporting === "pdf" ? "Exporting…" : "PDF"}
+          </button>
+          <button onClick={() => exportPlan("md")} disabled={offline || exporting} title={offline ? "Connect to the backend to export" : "Download as Markdown"} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--surface)", color: "var(--text2)", border: "0.5px solid var(--border)", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "500", cursor: offline || exporting ? "default" : "pointer", opacity: offline || exporting ? 0.6 : 1 }}>
+            <FileText size={14} /> {exporting === "md" ? "Exporting…" : ".md"}
           </button>
         </div>
       </div>
