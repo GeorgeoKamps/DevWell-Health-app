@@ -80,20 +80,45 @@ devwell/
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Run with Docker (recommended)
+
+The whole stack — API + frontend — comes up with one command:
+
+```bash
+# from the repo root
+docker compose up --build
+```
+
+- Frontend → http://localhost:8080
+- API docs → http://localhost:8000/docs
+
+Runs in **mock mode** out of the box (deterministic canned content, no API key needed). To enable real Claude responses, export a key before bringing it up:
+
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...   # Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
+docker compose up --build
+```
+
+Your logs and profile persist in a named volume (`devwell-data`), so they survive restarts.
+
+---
+
+### Run locally (without Docker)
+
+#### Prerequisites
 
 - Python 3.10+
 - Node.js 18+
-- An [Anthropic API key](https://console.anthropic.com/)
+- *(Optional)* An [Anthropic API key](https://console.anthropic.com/) — omit it to run in mock mode
 
-### 1. Clone the repo
+#### 1. Clone the repo
 
 ```bash
 git clone https://github.com/your-username/devwell.git
 cd devwell
 ```
 
-### 2. Backend setup
+#### 2. Backend setup
 
 ```bash
 cd backend
@@ -102,17 +127,11 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Create a `.env` file in `/backend`:
+*(Optional)* Create a `.env` file in `/backend` to enable real Claude responses — skip it to run in mock mode:
 
 ```env
 ANTHROPIC_API_KEY=your_api_key_here
 CHROMA_DB_PATH=./chroma_db
-```
-
-Ingest the knowledge base:
-
-```bash
-python rag/ingest.py
 ```
 
 Start the FastAPI server:
@@ -123,7 +142,7 @@ uvicorn main:app --reload
 
 API docs available at `http://localhost:8000/docs`
 
-### 3. Frontend setup
+#### 3. Frontend setup
 
 ```bash
 cd frontend
@@ -135,6 +154,18 @@ App runs at `http://localhost:5173`
 
 ---
 
+## 🧪 Testing
+
+The backend ships with a pytest suite covering the persistence layer, the sitting-alert agent state machine, RAG retrieval, JSON extraction, and the HTTP routes (via FastAPI's `TestClient`). Tests run in isolated mock mode against a throwaway SQLite database — **no API key required**.
+
+```bash
+cd backend
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+---
+
 ## 🔌 API Endpoints
 
 | Method | Endpoint | Description |
@@ -143,11 +174,15 @@ App runs at `http://localhost:5173`
 | `GET` | `/profile` | Get user profile |
 | `POST` | `/meal-plan` | Generate weekly meal plan |
 | `POST` | `/workout` | Generate a workout session |
-| `GET` | `/nudge/start` | Start sitting alert agent |
 | `POST` | `/chat` | RAG-powered health chat |
+| `POST` | `/mood` | Mood / stress reset suggestions |
 | `POST` | `/log` | Log a meal, break, or workout |
+| `DELETE` | `/log/{id}` | Remove a log entry |
 | `GET` | `/report/weekly` | Get weekly health report |
-| `WS` | `/ws/nudge` | WebSocket channel for real-time nudges |
+| `GET` | `/search` · `/knowledge` | Browse / search the knowledge base |
+| `POST` | `/nudge/heartbeat` | Tell the agent the tab is active |
+| `GET` | `/nudge/stream` | **SSE** stream of real-time break nudges |
+| `POST` | `/nudge/took-break` | Acknowledge a break (logs it) |
 
 ---
 
@@ -172,13 +207,16 @@ The AI can call tools like exporting a shopping list to PDF, fetching your weekl
 ## 🗓️ Roadmap
 
 - [x] Project concept & architecture
-- [ ] FastAPI scaffolding
-- [ ] ChromaDB setup & knowledge base ingestion
-- [ ] Meal plan prompt chain
-- [ ] Workout generator with RAG
-- [ ] Sitting alert agent + WebSocket nudges
-- [ ] React dashboard with timer & streaks
-- [ ] Weekly health report agent
+- [x] FastAPI scaffolding
+- [x] ChromaDB setup & knowledge base ingestion *(with a dependency-free TF-IDF fallback)*
+- [x] Meal plan prompt chain
+- [x] Workout generator with RAG
+- [x] Sitting alert agent + real-time SSE nudges *(AI-generated)*
+- [x] React dashboard with timer & streaks
+- [x] Weekly health report from real activity logs
+- [x] SQLite persistence (profile + activity log)
+- [x] Health chat (RAG-grounded) + Mood/stress tips
+- [x] Backend test suite + Docker / docker-compose
 - [ ] Shopping list PDF export
 - [ ] Calendar integration for workout scheduling
 - [ ] GitHub activity tracking (code-heavy day → more stretch reminders)
