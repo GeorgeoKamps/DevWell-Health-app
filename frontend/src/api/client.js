@@ -30,6 +30,28 @@ export const api = {
   search: (q, k = 5) => request(`/search?q=${encodeURIComponent(q)}&k=${k}`),
   knowledge: () => request("/knowledge"),
   knowledgeDoc: (source) => request(`/knowledge/doc?source=${encodeURIComponent(source)}`),
+
+  // Posts the current plan back and triggers a file download (PDF or Markdown).
+  exportMealPlan: async (plan, format = "pdf") => {
+    const res = await fetch(`${API_URL}/meal-plan/export?format=${format}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(plan),
+    });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const blob = await res.blob();
+    const cd = res.headers.get("Content-Disposition") || "";
+    const match = cd.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+    const name = match ? decodeURIComponent(match[1]) : `devwell-meal-plan.${format === "pdf" ? "pdf" : "md"}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 };
 
 export { API_URL };
