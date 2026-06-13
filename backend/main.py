@@ -19,12 +19,16 @@ try:
 except ImportError:
     pass
 
+from db import init_db
 from routers import profile, meal_plan, workout, nudge, chat, log, report, mood, search
+
+# Create tables on startup (profile + logs now persist to SQLite).
+init_db()
 
 app = FastAPI(
     title="DevWell API",
     description="The health companion for developers.",
-    version="0.3.0",
+    version="0.4.0",
 )
 
 _origins = os.getenv(
@@ -45,7 +49,7 @@ for r in (profile, meal_plan, workout, nudge, chat, log, report, mood, search):
 
 @app.get("/", tags=["meta"])
 def root() -> dict:
-    return {"app": "DevWell API", "version": "0.3.0", "docs": "/docs", "status": "ok"}
+    return {"app": "DevWell API", "version": "0.4.0", "docs": "/docs", "status": "ok"}
 
 
 @app.get("/health", tags=["meta"])

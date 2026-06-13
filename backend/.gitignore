@@ -6,3 +6,7 @@ venv/
 chroma_db/
 .pytest_cache/
 *.log
+
+# SQLite database
+*.db
+devwell.db

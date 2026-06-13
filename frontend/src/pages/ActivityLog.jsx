@@ -64,7 +64,18 @@ export default function ActivityLog() {
   };
 
   const logs = [...apiLogs, ...seedLogs].filter((l) => !removed[l.id]);
-  const remove = (id) => setRemoved((r) => ({ ...r, [id]: true }));
+  const remove = async (id) => {
+    if (typeof id === "string" && id.startsWith("api-")) {
+      try {
+        await api.deleteLog(Number(id.slice(4)));
+        refresh();
+        return;
+      } catch {
+        /* fall through to local hide if the delete fails */
+      }
+    }
+    setRemoved((r) => ({ ...r, [id]: true }));
+  };
   const filtered = filter === "all" ? logs : logs.filter((l) => l.type === filter);
 
   const stats = [
