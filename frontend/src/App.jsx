@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import Sidebar from "./components/Sidebar";
 import Byte from "./components/Byte";
+import NudgeOverlay from "./components/NudgeOverlay";
+import { useNudgeStream } from "./hooks/useNudgeStream";
 import Dashboard from "./pages/Dashboard";
 import MealPlanner from "./pages/MealPlanner";
 import Workout from "./pages/Workout";
@@ -15,6 +17,7 @@ import Profile from "./pages/Profile";
 import "./index.css";
 
 function Layout() {
+  const { nudge, ackBreak } = useNudgeStream();
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <Sidebar />
@@ -34,6 +37,16 @@ function Layout() {
         </Routes>
         <Byte />
       </main>
+
+      {/* App-wide nudge pushed by the backend sitting-alert agent over SSE */}
+      <NudgeOverlay
+        open={!!nudge}
+        nudge={nudge?.message}
+        brk={nudge?.micro_break}
+        onTakeBreak={ackBreak}
+        onSnooze={ackBreak}
+        onClose={ackBreak}
+      />
     </div>
   );
 }
