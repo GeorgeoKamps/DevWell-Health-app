@@ -1,24 +1,17 @@
 import asyncio
 import json
-import random
 
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
 from agents import sitting_agent as agent
-from data import mock, store
-from models.schemas import NudgeResponse, MicroBreak
+from chains.nudge_chain import generate_nudge
+from data import store
+from models.schemas import NudgeResponse
 
 router = APIRouter(prefix="/nudge", tags=["nudge"])
 
 CHECK_EVERY = 2  # seconds between SSE checks
-
-
-def _build_nudge() -> NudgeResponse:
-    return NudgeResponse(
-        message=random.choice(mock.NUDGES),
-        micro_break=MicroBreak(**random.choice(mock.MICRO_BREAKS)),
-    )
 
 
 def _interval_sec(override: int | None) -> int:
@@ -31,12 +24,12 @@ def _interval_sec(override: int | None) -> int:
 
 @router.get("", response_model=NudgeResponse)
 def get_nudge() -> NudgeResponse:
-    return _build_nudge()
+    return generate_nudge()
 
 
 @router.get("/start", response_model=NudgeResponse)
 def start_nudge_agent() -> NudgeResponse:
-    return _build_nudge()
+    return generate_nudge()
 
 
 @router.post("/heartbeat")
@@ -60,7 +53,8 @@ async def nudge_events(interval: int | None):
         sec = _interval_sec(interval)
         if agent.break_due(sec) and not agent.already_nudged():
             agent.mark_nudged()
-            n = _build_nudge()
+            # Claude generation is synchronous — run it off the event loop.
+            n = await asyncio.to_thread(generate_nudge)
             payload = {
                 "message": n.message,
                 "micro_break": {"title": n.micro_break.title, "detail": n.micro_break.detail},
