@@ -26,6 +26,7 @@ export const api = {
   getLogs: () => request("/log"),
   deleteLog: (id) => request(`/log/${id}`, { method: "DELETE" }),
   weeklyReport: () => request("/report/weekly"),
+  stats: () => request("/stats"),
   mood: (message) => request("/mood", { method: "POST", body: { message } }),
   search: (q, k = 5) => request(`/search?q=${encodeURIComponent(q)}&k=${k}`),
   knowledge: () => request("/knowledge"),
