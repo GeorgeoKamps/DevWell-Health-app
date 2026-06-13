@@ -26,6 +26,25 @@ export const api = {
   getLogs: () => request("/log"),
   deleteLog: (id) => request(`/log/${id}`, { method: "DELETE" }),
   weeklyReport: () => request("/report/weekly"),
+  stats: () => request("/stats"),
+
+  // Download a doctor-friendly progress report (period: "weekly"|"monthly").
+  exportProgress: async (period = "weekly", format = "pdf") => {
+    const res = await fetch(`${API_URL}/stats/report?period=${period}&format=${format}`);
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const blob = await res.blob();
+    const cd = res.headers.get("Content-Disposition") || "";
+    const match = cd.match(/filename\*?=(?:UTF-8'')?["']?([^;"']+)/i);
+    const name = match ? decodeURIComponent(match[1]) : `devwell-progress-${period}.${format === "pdf" ? "pdf" : "md"}`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
   mood: (message) => request("/mood", { method: "POST", body: { message } }),
   search: (q, k = 5) => request(`/search?q=${encodeURIComponent(q)}&k=${k}`),
   knowledge: () => request("/knowledge"),

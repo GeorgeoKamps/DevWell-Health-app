@@ -182,3 +182,43 @@ class KnowledgeDoc(BaseModel):
     source: str
     category: str
     text: str
+
+
+# ---- Stats / streaks --------------------------------------------------------
+class WeekCounts(BaseModel):
+    meals: int = 0
+    workouts: int = 0
+    water: int = 0
+    breaks: int = 0
+
+
+class StatsResponse(BaseModel):
+    current_streak: int = 0
+    longest_streak: int = 0
+    active_days_this_week: int = 0
+    total_logs: int = 0
+    logged_today: bool = False
+    this_week: WeekCounts = WeekCounts()
+
+
+# ---- Progress report (doctor-friendly export) -------------------------------
+class DayActivity(BaseModel):
+    date: str
+    meals: int = 0
+    workouts: int = 0
+    water: int = 0
+    breaks: int = 0
+    total: int = 0
+
+
+class ProgressReport(BaseModel):
+    patient_name: str = "DevWell user"
+    period_label: str = "Weekly"
+    start_date: str = ""
+    end_date: str = ""
+    days: int = 7
+    current_streak: int = 0
+    longest_streak: int = 0
+    active_days: int = 0
+    totals: WeekCounts = WeekCounts()
+    daily: list[DayActivity] = []

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Flame, Clock, Droplets, Dumbbell, Salad, ArrowRight, CheckCircle2, Circle, Plus, Minus, Armchair } from "lucide-react";
 import { useSittingTimer } from "../hooks/useSittingTimer";
 import NudgeOverlay from "../components/NudgeOverlay";
@@ -46,6 +46,12 @@ export default function Dashboard() {
     { name: "Hip flexor stretch", sets: "2 x 60s", done: false },
   ]);
   const [water, setWater] = useState(1.2);
+  const [stats, setStats] = useState(null);
+
+  // Pull real streak + this-week stats from the backend (derived from the log).
+  useEffect(() => {
+    api.stats().then(setStats).catch(() => {});
+  }, []);
 
   const mealsDone = meals.filter((m) => m.done).length;
   const exDone = exercises.filter((e) => e.done).length;
@@ -78,8 +84,8 @@ export default function Dashboard() {
           <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Good morning, George 👋</h1>
           <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>{today} · Stay hydrated today</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--amber-bg)", color: "var(--amber-text)", fontSize: "13px", fontWeight: "500", padding: "6px 14px", borderRadius: "20px" }}>
-          <Flame size={15} /> 7-day streak
+        <div title={stats ? `Longest streak: ${stats.longest_streak} days · ${stats.active_days_this_week} active days this week` : ""} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--amber-bg)", color: "var(--amber-text)", fontSize: "13px", fontWeight: "500", padding: "6px 14px", borderRadius: "20px" }}>
+          <Flame size={15} /> {stats ? (stats.current_streak > 0 ? `${stats.current_streak}-day streak` : "Start a streak today!") : "…"}
         </div>
       </div>
 
