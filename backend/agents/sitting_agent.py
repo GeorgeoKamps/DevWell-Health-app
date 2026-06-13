@@ -3,16 +3,20 @@
 Single-user, in-process state machine. The frontend sends heartbeats so the
 agent knows the user is active; when they've been sitting longer than their
 break interval, `break_due()` returns True and the SSE stream pushes a nudge.
-Calling `took_break()` resets the cycle.
+`took_break()` resets the cycle. If a pushed nudge is ignored past a grace
+period, the agent re-arms and counts the ignore (per the spec's "log the break
+— or log that it was ignored").
 """
 import time
 
-ACTIVE_WINDOW = 120  # seconds — considered "active" if a heartbeat arrived within this
+ACTIVE_WINDOW = 120  # seconds — "active" if a heartbeat arrived within this
 
 _state = {
-    "last_active": 0.0,   # last heartbeat
+    "last_active": 0.0,
     "last_break": time.time(),
-    "nudged": False,      # already pushed a nudge for the current cycle?
+    "nudged": False,
+    "nudged_at": 0.0,
+    "ignored": 0,
 }
 
 
@@ -43,6 +47,19 @@ def already_nudged() -> bool:
 
 def mark_nudged() -> None:
     _state["nudged"] = True
+    _state["nudged_at"] = time.time()
+
+
+def ignored_due(grace_sec: int) -> bool:
+    """A nudge was pushed but not acted on within the grace period."""
+    return _state["nudged"] and is_active() and (time.time() - _state["nudged_at"]) >= grace_sec
+
+
+def rearm_after_ignore() -> None:
+    """Count the ignore and reset the cycle so the agent nudges again later."""
+    _state["ignored"] += 1
+    _state["last_break"] = time.time()
+    _state["nudged"] = False
 
 
 def snapshot(interval_sec: int) -> dict:
@@ -50,4 +67,5 @@ def snapshot(interval_sec: int) -> dict:
         "active": is_active(),
         "seconds_until_break": seconds_until_break(interval_sec),
         "nudged": _state["nudged"],
+        "ignored": _state["ignored"],
     }
