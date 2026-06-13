@@ -15,11 +15,11 @@ const breaks = [
   { title: "Neck tilts + wrist circles", detail: "Tilt ear to shoulder each side, hold 10s. Then 10 wrist circles each way." },
 ];
 
-export default function NudgeOverlay({ open, seed = 0, onTakeBreak, onSnooze, onClose }) {
+export default function NudgeOverlay({ open, seed = 0, nudge: nudgeProp, brk: brkProp, onTakeBreak, onSnooze, onClose }) {
   if (!open) return null;
 
-  const nudge = nudges[seed % nudges.length];
-  const brk = breaks[seed % breaks.length];
+  const nudge = nudgeProp || nudges[seed % nudges.length];
+  const brk = brkProp || breaks[seed % breaks.length];
 
   return (
     <div

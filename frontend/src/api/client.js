@@ -19,6 +19,8 @@ export const api = {
   getProfile: () => request("/profile"),
   saveProfile: (profile) => request("/profile", { method: "POST", body: profile }),
   getNudge: () => request("/nudge"),
+  heartbeat: (interval) => request(`/nudge/heartbeat${interval ? `?interval=${interval}` : ""}`, { method: "POST" }),
+  tookBreak: () => request("/nudge/took-break", { method: "POST" }),
   chat: (message, history = []) => request("/chat", { method: "POST", body: { message, history } }),
   log: (entry) => request("/log", { method: "POST", body: entry }),
   getLogs: () => request("/log"),
