@@ -1,4 +1,4 @@
-"""Derive real streaks + activity stats from the persisted activity log.
+"""Derive real streaks + activity stats from a user's persisted activity log.
 
 A "day" counts as active if at least one activity was logged on that calendar
 date. The current streak is the run of consecutive active days ending today
@@ -17,7 +17,6 @@ def _as_date(ts) -> date:
         return ts.date()
     if isinstance(ts, date):
         return ts
-    # ISO string fallback
     return datetime.fromisoformat(str(ts)).date()
 
 
@@ -26,7 +25,6 @@ def _active_dates(logs) -> set[date]:
 
 
 def _current_streak(active: set[date], today: date) -> int:
-    # Anchor on today if active, else yesterday (streak still alive), else 0.
     if today in active:
         anchor = today
     elif (today - timedelta(days=1)) in active:
@@ -46,7 +44,7 @@ def _longest_streak(active: set[date]) -> int:
     longest = 1
     for d in active:
         if (d - timedelta(days=1)) in active:
-            continue  # not the start of a run
+            continue
         length, day = 1, d + timedelta(days=1)
         while day in active:
             length += 1
@@ -55,9 +53,9 @@ def _longest_streak(active: set[date]) -> int:
     return longest
 
 
-def compute_stats(today: date | None = None) -> StatsResponse:
+def compute_stats(user_id: int, today: date | None = None) -> StatsResponse:
     today = today or date.today()
-    logs = store.list_logs()
+    logs = store.list_logs(user_id)
     active = _active_dates(logs)
 
     week_start = today - timedelta(days=today.weekday())  # Monday
@@ -81,23 +79,21 @@ def compute_stats(today: date | None = None) -> StatsResponse:
     )
 
 
-def compute_progress(period_days: int, today: date | None = None) -> "ProgressReport":
+def compute_progress(user_id: int, period_days: int, today: date | None = None):
     """Aggregate the activity log over a trailing window (e.g. 7 or 30 days)
-    into a doctor-friendly progress report: per-day breakdown + totals +
-    streaks. Streaks are computed over the full history, not just the window."""
-    from models.schemas import ProgressReport, DayActivity, WeekCounts
+    into a doctor-friendly progress report. Streaks are over full history."""
+    from models.schemas import ProgressReport, DayActivity, WeekCounts as _WC
 
     today = today or date.today()
-    start = today - timedelta(days=period_days - 1)  # inclusive window
-    logs = store.list_logs()
+    start = today - timedelta(days=period_days - 1)
+    logs = store.list_logs(user_id)
     active_all = _active_dates(logs)
 
-    # per-day tallies within the window
     per_day: dict[date, dict[str, int]] = {
         start + timedelta(days=i): {"meals": 0, "workouts": 0, "water": 0, "breaks": 0}
         for i in range(period_days)
     }
-    totals = WeekCounts()
+    totals = _WC()
     for e in logs:
         if e.timestamp is None or e.type not in _WEEK_TYPES:
             continue
@@ -118,7 +114,7 @@ def compute_progress(period_days: int, today: date | None = None) -> "ProgressRe
 
     label = "Weekly" if period_days <= 7 else ("Monthly" if period_days <= 31 else f"{period_days}-day")
     return ProgressReport(
-        patient_name=store.get_profile().name or "DevWell user",
+        patient_name=store.get_profile(user_id).name or "DevWell user",
         period_label=label,
         start_date=start.isoformat(),
         end_date=today.isoformat(),

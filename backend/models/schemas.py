@@ -21,6 +21,7 @@ class Profile(BaseModel):
     hydration_goal_l: float = 2.5
     sitting_break_interval_min: int = 45
     allergies: list[str] = []
+    favorite_foods: list[str] = []
 
 
 # ----- Meal plan -------------------------------------------------------------
@@ -29,6 +30,7 @@ class MealPlanRequest(BaseModel):
     max_cook_time_min: int = 30
     days: int = 7
     people: int = 1
+    favorite_foods: list[str] = []
 
 
 class DayPlan(BaseModel):
@@ -222,3 +224,26 @@ class ProgressReport(BaseModel):
     active_days: int = 0
     totals: WeekCounts = WeekCounts()
     daily: list[DayActivity] = []
+
+
+# ---- Auth -------------------------------------------------------------------
+class UserCreate(BaseModel):
+    email: str
+    password: str
+    name: str = ""
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class UserPublic(BaseModel):
+    id: int
+    email: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic

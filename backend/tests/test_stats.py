@@ -5,65 +5,52 @@ from data import store, stats
 from models.schemas import LogRequest
 
 
-def _log_on(d: date, type_="break"):
-    store.add_log(LogRequest(type=type_, detail="x", timestamp=datetime(d.year, d.month, d.day, 12, 0)))
+def _log_on(user_id, d, type_="break"):
+    store.add_log(user_id, LogRequest(type=type_, detail="x", timestamp=datetime(d.year, d.month, d.day, 12, 0)))
 
 
-def test_no_logs_is_all_zero():
-    s = stats.compute_stats(date(2026, 6, 13))
+def test_no_logs_is_all_zero(user_id):
+    s = stats.compute_stats(user_id, date(2026, 6, 13))
     assert s.current_streak == 0 and s.longest_streak == 0
     assert s.total_logs == 0 and s.logged_today is False
 
 
-def test_consecutive_days_ending_today():
+def test_consecutive_days_ending_today(user_id):
     today = date(2026, 6, 13)
     for d in (today, today - timedelta(days=1), today - timedelta(days=2)):
-        _log_on(d)
-    s = stats.compute_stats(today)
-    assert s.current_streak == 3
-    assert s.longest_streak == 3
-    assert s.logged_today is True
+        _log_on(user_id, d)
+    s = stats.compute_stats(user_id, today)
+    assert s.current_streak == 3 and s.longest_streak == 3 and s.logged_today is True
 
 
-def test_streak_survives_until_a_full_day_missed():
+def test_streak_survives_until_a_full_day_missed(user_id):
     today = date(2026, 6, 13)
-    # logged yesterday + day before, nothing today yet -> streak still alive (2)
-    _log_on(today - timedelta(days=1))
-    _log_on(today - timedelta(days=2))
-    s = stats.compute_stats(today)
-    assert s.current_streak == 2
-    assert s.logged_today is False
+    _log_on(user_id, today - timedelta(days=1))
+    _log_on(user_id, today - timedelta(days=2))
+    s = stats.compute_stats(user_id, today)
+    assert s.current_streak == 2 and s.logged_today is False
 
 
-def test_gap_breaks_current_but_longest_remembers():
+def test_gap_breaks_current_but_longest_remembers(user_id):
     today = date(2026, 6, 13)
-    # a 4-day run last week, then a gap, then 1 day today
     for d in (today - timedelta(days=i) for i in (10, 9, 8, 7)):
-        _log_on(d)
-    _log_on(today)
-    s = stats.compute_stats(today)
-    assert s.current_streak == 1       # only today
-    assert s.longest_streak == 4       # the old run
+        _log_on(user_id, d)
+    _log_on(user_id, today)
+    s = stats.compute_stats(user_id, today)
+    assert s.current_streak == 1 and s.longest_streak == 4
 
 
-def test_same_day_multiple_logs_count_one_day():
+def test_same_day_multiple_logs_count_one_day(user_id):
     today = date(2026, 6, 13)
-    _log_on(today, "meal")
-    _log_on(today, "workout")
-    _log_on(today, "water")
-    s = stats.compute_stats(today)
-    assert s.current_streak == 1
-    assert s.active_days_this_week == 1
+    for t in ("meal", "workout", "water"):
+        _log_on(user_id, today, t)
+    s = stats.compute_stats(user_id, today)
+    assert s.current_streak == 1 and s.active_days_this_week == 1
     assert s.this_week.meals == 1 and s.this_week.workouts == 1 and s.this_week.water == 1
 
 
-def test_endpoint(client):
-    # one log today via the API, then check /stats reflects it
-    client.post("/log", json={"type": "break", "detail": "stretch"})
-    r = client.get("/stats")
-    assert r.status_code == 200
-    body = r.json()
-    assert body["total_logs"] == 1
-    assert body["current_streak"] == 1
-    assert body["logged_today"] is True
-    assert body["this_week"]["breaks"] == 1
+def test_endpoint(auth_client):
+    auth_client.post("/log", json={"type": "break", "detail": "stretch"})
+    body = auth_client.get("/stats").json()
+    assert body["total_logs"] == 1 and body["current_streak"] == 1
+    assert body["logged_today"] is True and body["this_week"]["breaks"] == 1

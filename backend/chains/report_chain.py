@@ -20,9 +20,9 @@ WATER = [2.1, 1.8, 2.5, 1.4, 2.2, 2.0, 1.7]
 SITTING = [6.2, 7.1, 5.8, 8.0, 6.5, 3.2, 2.1]
 
 
-def _counts():
+def _counts(user_id):
     counts = {"meal": 0, "workout": 0, "water": 0, "break": 0}
-    for entry in store.list_logs():
+    for entry in store.list_logs(user_id):
         if entry.type in counts:
             counts[entry.type] += 1
     return counts
@@ -55,8 +55,8 @@ def _default_insights() -> list[ReportInsight]:
     ]
 
 
-def generate_report() -> WeeklyReport:
-    counts = _counts()
+def generate_report(user_id: int) -> WeeklyReport:
+    counts = _counts(user_id)
     total = sum(counts.values())
     # Real cards whenever we have any logged data (key-independent), else mock.
     cards = _cards(counts) if total > 0 else _mock_cards()

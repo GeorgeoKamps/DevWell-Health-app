@@ -1,28 +1,33 @@
 import asyncio
 import json
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from fastapi.responses import StreamingResponse
 
 from agents import sitting_agent as agent
 from chains.nudge_chain import generate_nudge
+from core_auth import get_current_user
 from data import store
+from data.orm import UserRow
 from models.schemas import NudgeResponse, LogRequest
 
 router = APIRouter(prefix="/nudge", tags=["nudge"])
 
-CHECK_EVERY = 2     # seconds between SSE checks
-IGNORE_GRACE = 90   # seconds before a pushed-but-unacknowledged nudge is logged as ignored
+CHECK_EVERY = 2       # seconds between SSE checks
+IGNORE_GRACE = 90     # seconds before a pushed-but-unacknowledged nudge is logged as ignored
+DEFAULT_INTERVAL = 45 * 60  # the in-process agent is single-user; default to 45 min
 
 
 def _interval_sec(override: int | None) -> int:
-    """Break interval in seconds: explicit override (for demos) or the user's
-    persisted profile setting."""
+    """Break interval in seconds: explicit override (or per-user via the
+    heartbeat query param) else the 45-minute default. The agent is in-process
+    and single-user, so it doesn't read a per-user profile here."""
     if override and override > 0:
         return override
-    return max(1, store.get_profile().sitting_break_interval_min) * 60
+    return DEFAULT_INTERVAL
 
 
+# --- agent endpoints (unauthenticated: the SSE EventSource can't send headers) ---
 @router.get("", response_model=NudgeResponse)
 def get_nudge() -> NudgeResponse:
     return generate_nudge()
@@ -41,17 +46,15 @@ def heartbeat(interval: int | None = Query(None)) -> dict:
 
 
 @router.post("/took-break")
-def took_break() -> dict:
+def took_break(user: UserRow = Depends(get_current_user)) -> dict:
     """Reset the cycle when the user takes (or snoozes) a break, and persist it
-    so it shows up in the Activity Log and Weekly Report."""
-    store.add_log(LogRequest(type="break", detail="Took a break (agent nudge)"))
+    to *their* log so it shows up in the Activity Log and Weekly Report."""
+    store.add_log(user.id, LogRequest(type="break", detail="Took a break (agent nudge)"))
     agent.took_break()
     return {"ok": True}
 
 
 async def nudge_events(interval: int | None):
-    """SSE generator: emits a `nudge` event once a break is due. If a pushed
-    nudge is ignored past the grace period, the agent re-arms (counting it)."""
     yield ": connected\n\n"
     while True:
         sec = _interval_sec(interval)

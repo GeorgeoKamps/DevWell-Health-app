@@ -30,10 +30,12 @@ def _build_days(req: MealPlanRequest, context: str) -> list[DayPlan]:
         "and nothing else. Prefer the reference recipe snippets below when relevant."
         + (f"\n\n--- Knowledge base snippets ---\n{context}" if context else "")
     )
+    favs = ", ".join(req.favorite_foods) if req.favorite_foods else ""
     user = (
         f"Create a balanced {req.days}-day meal plan for a {req.diet} diet, max {req.max_cook_time_min} "
         f"minutes cook time per meal, for {req.people} person(s). Vary the meals across days.\n"
-        'Return JSON shaped exactly: {"days": [{"day": "Monday", "breakfast": "...", '
+        + (f"The person especially likes: {favs}. Feature these where they fit naturally, without overusing them.\n" if favs else "")
+        + 'Return JSON shaped exactly: {"days": [{"day": "Monday", "breakfast": "...", '
         '"lunch": "...", "dinner": "...", "kcal": 1800}, ...]}. kcal is the estimated daily total.'
     )
     data = extract_json(claude.complete(system, user, max_tokens=2000))

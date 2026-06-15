@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useTheme } from "../hooks/useTheme";
-import { LayoutDashboard, Salad, Dumbbell, Timer, MessageCircle, HeartHandshake, BookOpen, BarChart2, History, User, HeartPulse, Moon, Sun } from "lucide-react";
+import { useAuth } from "../context/AuthContext";
+import { LayoutDashboard, Salad, Dumbbell, Timer, MessageCircle, HeartHandshake, BookOpen, BarChart2, History, User, HeartPulse, Moon, Sun, LogOut } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard",      path: "/dashboard",    icon: LayoutDashboard },
@@ -42,6 +43,7 @@ function NavItem({ item }) {
 
 export default function Sidebar() {
   const { isDark, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   return (
     <aside style={{
       width: "220px", minWidth: "220px", height: "100vh",
@@ -63,6 +65,14 @@ export default function Sidebar() {
       {settingItems.map(item => <NavItem key={item.path} item={item} />)}
 
       <div style={{ marginTop: "auto", paddingTop: "12px", borderTop: "0.5px solid var(--border)" }}>
+        {user && (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 10px", marginBottom: "2px" }}>
+            <span style={{ fontSize: "12px", color: "var(--text3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={user.email}>{user.email}</span>
+            <button onClick={logout} title="Log out" style={{ display: "flex", alignItems: "center", gap: "4px", background: "transparent", border: "none", color: "var(--text3)", cursor: "pointer", fontSize: "12px", flexShrink: 0 }}>
+              <LogOut size={14} /> Log out
+            </button>
+          </div>
+        )}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 10px" }}>
           <span style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text2)" }}>
             {isDark ? <Moon size={15} /> : <Sun size={15} />}
