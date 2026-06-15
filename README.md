@@ -95,7 +95,7 @@ docker compose up --build
 Runs in **mock mode** out of the box (deterministic canned content, no API key needed). To enable real Claude responses, export a key before bringing it up:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...   # Windows PowerShell: $env:ANTHROPIC_API_KEY="sk-ant-..."
+export ANTHROPIC_API_KEY=  # Windows PowerShell: $env:ANTHROPIC_API_KEY=""
 docker compose up --build
 ```
 
@@ -107,7 +107,7 @@ Your logs and profile persist in a named volume (`devwell-data`), so they surviv
 
 #### Prerequisites
 
-- Python 3.10+
+- Python **3.11 or 3.12** (recommended). Avoid 3.13/3.14 — some dependencies (e.g. `pydantic-core`) don't yet ship prebuilt wheels for them, so `pip install` tries to compile from source and fails without a C/Rust toolchain. The Docker path uses 3.12 and sidesteps this entirely.
 - Node.js 18+
 - *(Optional)* An [Anthropic API key](https://console.anthropic.com/) — omit it to run in mock mode
 
@@ -166,10 +166,50 @@ pytest
 
 ---
 
+## 🛟 Troubleshooting
+
+### "Failed to fetch" / signup or login hangs
+
+This almost always means the **frontend can't reach the backend** — i.e. the API server isn't running. Check, in order:
+
+1. **Is the backend up?** Look at the backend terminal — you should see `Uvicorn running on http://127.0.0.1:8000`. Open <http://localhost:8000/health>; it should return `{"status":"healthy", ...}`. If it doesn't load, the server is down.
+2. **Missing dependencies.** If the terminal shows `ModuleNotFoundError` (e.g. `bcrypt` or `jwt`), your virtual environment is missing the auth packages. Reinstall:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   ```
+   If `pip install` itself **fails building `pydantic-core`** with `error: linker 'link.exe' not found` (or a Rust/cargo error), your venv is on too-new a Python (3.13/3.14) that lacks prebuilt wheels. Recreate the venv on 3.12:
+   ```bash
+   py -3.12 -m venv venv         # Windows (install 3.12 first: winget install Python.Python.3.12)
+   venv\Scripts\activate
+   python -m pip install -r requirements.txt
+   ```
+3. **Port mismatch.** The frontend talks to `http://localhost:8000` by default. If you started the backend on a different port, set `VITE_API_URL` in `frontend/.env` to match (see `frontend/.env.example`).
+
+### Resetting the dev database (after a schema change)
+
+The app uses SQLite and creates tables on startup, but it **does not auto-migrate** existing tables. After a change that alters the schema (for example, adding users/auth), an old `backend/devwell.db` will be missing new columns and requests will fail (e.g. a 500 on signup). Start fresh:
+
+```bash
+cd backend
+# Windows
+ren devwell.db devwell-old.bak    # or: del devwell.db
+# macOS / Linux
+mv devwell.db devwell-old.bak     # or: rm devwell.db
+uvicorn main:app --reload
+```
+
+On the next start the schema is recreated cleanly. The database is gitignored and only holds local data, so removing it is safe in development.
+
+---
+
 ## 🔌 API Endpoints
 
 | Method | Endpoint | Description |
 |---|---|---|
+| `POST` | `/auth/signup` | Create an account, returns a JWT |
+| `POST` | `/auth/login` | Log in, returns a JWT |
+| `GET` | `/auth/me` | Current user (requires token) |
 | `POST` | `/profile` | Save user preferences |
 | `GET` | `/profile` | Get user profile |
 | `POST` | `/meal-plan` | Generate weekly meal plan |
