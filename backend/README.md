@@ -1,14 +1,21 @@
 # DevWell API — Backend
 
-FastAPI backend for DevWell. **Scaffold phase:** every route returns placeholder
-data. The AI layer (Claude prompt chains, RAG, the sitting-alert agent) gets
-wired in on top of these stubs later — the response shapes won't change.
+FastAPI backend for DevWell. It powers the meal planner, workout generator,
+RAG-grounded health chat, mood check, the sitting-alert agent (SSE), activity
+log, streaks/stats, and PDF/Markdown exports.
+
+**No API key required:** retrieval runs locally, so every AI feature has a
+knowledge-base-grounded fallback. Set `ANTHROPIC_API_KEY` in `.env` to enable
+live Claude responses; without it the API runs in deterministic **mock mode**.
+
+> Use **Python 3.11 or 3.12** (not 3.13/3.14 — some dependencies don't ship
+> prebuilt wheels for those yet).
 
 ## Run locally
 
 ```bash
 cd backend
-python -m venv venv
+py -3.12 -m venv venv             # or: python -m venv venv  (on 3.11/3.12)
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 uvicorn main:app --reload
@@ -17,8 +24,8 @@ uvicorn main:app --reload
 - API root: http://localhost:8000/
 - Interactive docs (Swagger): http://localhost:8000/docs
 
-Copy `.env.example` to `.env` if you want to set CORS origins or (later) an API key.
-The scaffold runs fine without any `.env`.
+Copy `.env.example` to `.env` to set CORS origins or an `ANTHROPIC_API_KEY`.
+The app runs fine without any `.env` (mock mode).
 
 ## Endpoints
 

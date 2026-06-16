@@ -8,12 +8,14 @@ DevWell helps you eat better, move more, and breathe occasionally — without br
 
 ## ✨ Features
 
-- 🥗 **Meal Prep Generator** — Weekly meal plans tailored to your diet and cooking time, with a ready-to-go shopping list
-- 💪 **Workout Planner** — Short, targeted sessions designed around your actual schedule ("I have 20 mins")
-- 🪑 **Sitting Alert Agent** — Gets notified when you've been glued to your chair too long and fires dev-themed nudges
-- 🧘 **Mood & Stress Tips** — Tell it you're losing your mind over a bug, get an instant mental reset
-- 📊 **Weekly Health Report** — Every Sunday, a personalized summary of your week with actionable suggestions
-- 💬 **Health Chat** — Ask anything: nutrition, exercises, ergonomics — answered from a curated knowledge base
+- 🥗 **Meal Prep Generator** — Weekly meal plans tailored to your **diet, favourite foods, allergies, and dislikes**, with a ready-to-go shopping list. Export any plan to **PDF or Markdown**.
+- 💪 **Workout Planner** — Short, targeted sessions designed around your actual schedule ("I have 20 mins").
+- 🪑 **Sitting Alert Agent** — An autonomous agent watches your active time and pushes **real-time, dev-themed break nudges** over SSE when you've been sitting too long.
+- 🧘 **Mood & Stress Check** — Tell it you're losing your mind over a bug; it detects your mood and gives an empathetic reply plus a breathing exercise and a desk reset (with a safety path for distress).
+- 💬 **Health Chat** — Ask anything about nutrition, workouts, ergonomics, sleep, or focus — answers are grounded in a curated knowledge base with source citations.
+- 📊 **Weekly Report + Doctor Report** — A weekly summary of your activity, plus a **doctor-friendly progress report** (last 7 or 30 days) you can download as PDF.
+- 🔥 **Streaks & Activity Log** — Real streaks and per-category stats derived from what you actually log, with **fresh-start resets** (per category or all at once).
+- 🧠 **Works with or without an API key** — every AI feature has a knowledge-base-grounded fallback, so the app is fully functional offline (in "mock mode").
 
 ---
 
@@ -21,12 +23,13 @@ DevWell helps you eat better, move more, and breathe occasionally — without br
 
 | Layer | Technology |
 |---|---|
-| Frontend | React |
-| Backend | FastAPI |
-| LLM | Claude API (`claude-sonnet-4-20250514`) |
-| Vector DB | ChromaDB |
-| Embeddings | sentence-transformers |
-| Real-time | WebSockets / SSE |
+| Frontend | React + Vite (`react-router`, inline styles, lucide icons) |
+| Backend | FastAPI + Pydantic v2 |
+| LLM | Claude API (model configurable via `CLAUDE_MODEL`) |
+| Retrieval (RAG) | ChromaDB, with a dependency-free TF-IDF fallback |
+| Persistence | SQLite (via SQLAlchemy) |
+| Real-time | Server-Sent Events (SSE) for the sitting-alert agent |
+| Tests / deploy | pytest · Docker + docker-compose |
 
 ---
 
@@ -107,9 +110,9 @@ Your logs and profile persist in a named volume (`devwell-data`), so they surviv
 
 #### Prerequisites
 
-- Python 3.10+
+- Python **3.11 or 3.12** (avoid 3.13/3.14 — some deps lack prebuilt wheels and would try to compile from source). The Docker path uses 3.12 and avoids this entirely.
 - Node.js 18+
-- *(Optional)* An [Anthropic API key](https://console.anthropic.com/) — omit it to run in mock mode
+- *(Optional)* An [Anthropic API key](https://console.anthropic.com/) — omit it to run in **mock mode** (fully functional, with knowledge-base-grounded fallback answers)
 
 #### 1. Clone the repo
 
@@ -152,6 +155,23 @@ npm run dev
 
 App runs at `http://localhost:5173`
 
+> **Heads-up:** start the **backend first**, then the frontend. Keep both terminals open — closing the backend shows "failed to fetch" in the UI. If you change the Python deps or hit a schema error, see **Troubleshooting** below.
+
+---
+
+## 🧭 Using the app
+
+Open `http://localhost:5173` and you land on the **Dashboard**. The app opens with a clean slate; everything you do is logged and reflected in your stats. Things to try:
+
+- **Dashboard** — log water/meals/workouts; watch the streak and tiles update. Each tile (and a master button) has a **Reset** to start fresh.
+- **Meal Planner** — fill in your **diet, liked foods, allergies, and disliked foods**, then **Generate my meal plan** — the week (and shopping list) adapt to your taste. Export it to **PDF/Markdown**.
+- **Health Chat** — ask anything ("best upper-body exercises", "how much water should I drink") and get a knowledge-base-grounded answer with sources.
+- **Mood Check** — type how you feel; it detects your mood and gives an empathetic reply + breathing/desk reset.
+- **Activity Timer / Byte the frog** — the sitting-alert agent nudges you to take breaks.
+- **Weekly Report** — see your week and download a **doctor-friendly progress report** (last 7 or 30 days).
+
+**AI mode vs mock mode:** with a valid `ANTHROPIC_API_KEY` (and internet access to Anthropic) the answers are generated live by Claude. Without a key — or if the network can't reach Anthropic — the app runs in **mock mode**: still fully clickable, with relevant, knowledge-base-grounded answers. Check which mode you're in at `http://localhost:8000/health` (`ai_enabled: true/false`).
+
 ---
 
 ## 🧪 Testing
@@ -178,7 +198,8 @@ pytest
 | `POST` | `/chat` | RAG-powered health chat |
 | `POST` | `/mood` | Mood / stress reset suggestions |
 | `POST` | `/log` | Log a meal, break, or workout |
-| `DELETE` | `/log/{id}` | Remove a log entry |
+| `DELETE` | `/log/{id}` | Remove a single log entry |
+| `DELETE` | `/log` | Clear all activity, or one category via `?type=water\|meal\|workout\|break` |
 | `GET` | `/report/weekly` | Get weekly health report |
 | `GET` | `/stats` | Real streaks + this-week activity counts |
 | `GET` | `/stats/report` | Doctor-friendly progress PDF/MD (`period=weekly\|monthly`) |
@@ -197,13 +218,16 @@ DevWell uses a combination of four GenAI patterns:
 Your questions are matched against a curated knowledge base of nutrition guides, exercise docs, and ergonomics tips — so answers are grounded in real content, not hallucinated.
 
 **Prompt Chains**
-Multi-step workflows like meal planning: retrieve recipes → build a balanced week → generate shopping list → format output. Each step feeds into the next.
+Multi-step workflows like meal planning: take your preferences (diet, **favourite foods, allergies, dislikes**) → retrieve relevant recipes → build a balanced week (strictly avoiding allergens) → consolidate the ingredients into a shopping list. Each step feeds into the next.
 
 **Agents**
 The sitting alert agent runs autonomously in the background — it tracks your active time, decides when to nudge you, picks a relevant micro-break suggestion, and logs whether you took it.
 
 **Tool Use**
-The AI can call tools like exporting a shopping list to PDF, fetching your weekly log data, or formatting a workout plan for display.
+The AI can call tools like exporting a shopping list / meal plan to PDF or Markdown, building a doctor-friendly progress report, or formatting a workout plan for display.
+
+**Graceful fallback (mock mode)**
+Retrieval runs locally, so even with **no API key** every feature still works: Health Chat and Mood answer from the knowledge base (keyword intent-routing picks the right doc), and the Meal Planner still respects your allergies, dislikes, and favourites. The API timeouts are capped, so a slow/unreachable Claude never hangs a request — it falls back instead.
 
 ---
 
