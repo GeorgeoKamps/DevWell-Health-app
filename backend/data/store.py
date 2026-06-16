@@ -1,7 +1,7 @@
 """Persistent store backed by SQLite (via SQLAlchemy).
 
 Same public interface as the old in-memory store — routers and chains call these
-four helpers and don't know about the DB. Profile is a single row (id=1); logs
+helpers and don't know about the DB. Profile is a single row (id=1); logs
 accumulate in the `logs` table and survive restarts.
 """
 from datetime import datetime
@@ -79,3 +79,15 @@ def delete_log(log_id: int) -> bool:
         db.delete(row)
         db.commit()
         return True
+
+
+def clear_logs(log_type: str | None = None) -> int:
+    """Delete log entries — all of them, or just one category (water/meal/
+    workout/break). Returns how many were removed."""
+    with SessionLocal() as db:
+        q = db.query(LogRow)
+        if log_type:
+            q = q.filter(LogRow.type == log_type)
+        n = q.delete()
+        db.commit()
+        return n
