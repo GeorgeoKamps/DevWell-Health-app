@@ -29,6 +29,9 @@ class MealPlanRequest(BaseModel):
     max_cook_time_min: int = 30
     days: int = 7
     people: int = 1
+    favorite_foods: list[str] = []
+    allergies: list[str] = []
+    disliked_foods: list[str] = []
 
 
 class DayPlan(BaseModel):

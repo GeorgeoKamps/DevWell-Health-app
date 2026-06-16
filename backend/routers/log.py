@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from data import store
 from models.schemas import LogRequest, LogResponse, LogEntry
 
@@ -14,6 +14,13 @@ def add_log(req: LogRequest) -> LogResponse:
 @router.get("", response_model=list[LogEntry])
 def get_logs() -> list[LogEntry]:
     return store.list_logs()
+
+
+@router.delete("")
+def clear_logs(type: str | None = Query(None)) -> dict:
+    """Wipe activity — everything, or just one category via ?type=water|meal|workout|break."""
+    removed = store.clear_logs(type)
+    return {"ok": True, "removed": removed, "total_logs": len(store.list_logs())}
 
 
 @router.delete("/{log_id}")

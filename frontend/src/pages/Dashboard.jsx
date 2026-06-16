@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Flame, Clock, Droplets, Dumbbell, Salad, ArrowRight, CheckCircle2, Circle, Plus, Minus, Armchair } from "lucide-react";
+import { Flame, Clock, Droplets, Dumbbell, Salad, ArrowRight, CheckCircle2, Circle, Plus, Minus, Armchair, RotateCcw } from "lucide-react";
 import { useSittingTimer } from "../hooks/useSittingTimer";
 import NudgeOverlay from "../components/NudgeOverlay";
 import { api } from "../api/client";
@@ -17,11 +17,16 @@ const HYDRATION_GOAL = 2.5;
 // Fire-and-forget: log to the backend, ignore failures (offline is fine).
 const logSafe = (entry) => { api.log({ ...entry, timestamp: new Date().toISOString() }).catch(() => {}); };
 
-function MetricCard({ icon: Icon, label, value, sub, color, children }) {
+function MetricCard({ icon: Icon, label, value, sub, color, children, onReset }) {
   return (
     <div style={card}>
-      <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--text3)", marginBottom: "8px" }}>
-        <Icon size={14} /> {label}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "12px", color: "var(--text3)", marginBottom: "8px" }}>
+        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}><Icon size={14} /> {label}</span>
+        {onReset && (
+          <button onClick={onReset} title={`Reset ${label.toLowerCase()}`} style={{ display: "flex", background: "transparent", border: "none", color: "var(--text3)", cursor: "pointer", padding: "2px" }}>
+            <RotateCcw size={12} />
+          </button>
+        )}
       </div>
       <div style={{ fontSize: "22px", fontWeight: "600", color: color || "var(--text)" }}>{value}</div>
       <div style={{ fontSize: "12px", color: "var(--text3)", marginTop: "2px" }}>{sub}</div>
@@ -35,8 +40,8 @@ export default function Dashboard() {
   const timer = useSittingTimer(45 * 60);
 
   const [meals, setMeals] = useState([
-    { name: "Greek yogurt + granola", time: "Breakfast", kcal: 380, done: true },
-    { name: "Grilled chicken wrap", time: "Lunch", kcal: 520, done: true },
+    { name: "Greek yogurt + granola", time: "Breakfast", kcal: 380, done: false },
+    { name: "Grilled chicken wrap", time: "Lunch", kcal: 520, done: false },
     { name: "Salmon + quinoa bowl", time: "Dinner", kcal: 610, done: false },
   ]);
   const [exercises, setExercises] = useState([
@@ -45,13 +50,32 @@ export default function Dashboard() {
     { name: "Plank hold", sets: "3 x 45s", done: false },
     { name: "Hip flexor stretch", sets: "2 x 60s", done: false },
   ]);
-  const [water, setWater] = useState(1.2);
+  const [water, setWater] = useState(0);
   const [stats, setStats] = useState(null);
+  const [resetting, setResetting] = useState(false);
+
+  const loadStats = () => api.stats().then(setStats).catch(() => {});
 
   // Pull real streak + this-week stats from the backend (derived from the log).
-  useEffect(() => {
-    api.stats().then(setStats).catch(() => {});
-  }, []);
+  useEffect(() => { loadStats(); }, []);
+
+  // Fresh start: clear the saved activity log + reset everything on screen to zero.
+  const resetAll = async () => {
+    setResetting(true);
+    setWater(0);
+    setMeals((ms) => ms.map((m) => ({ ...m, done: false })));
+    setExercises((es) => es.map((e) => ({ ...e, done: false })));
+    if (timer.reset) timer.reset();
+    try { await api.clearLogs(); } catch { /* offline is fine */ }
+    await loadStats();
+    setResetting(false);
+  };
+
+  // Per-category resets: clear that activity type on the backend + zero the tile.
+  const resetSitting = async () => { if (timer.reset) timer.reset(); try { await api.clearLogs("break"); } catch { /* ok */ } loadStats(); };
+  const resetWater = async () => { setWater(0); try { await api.clearLogs("water"); } catch { /* ok */ } loadStats(); };
+  const resetWorkouts = async () => { setExercises((es) => es.map((e) => ({ ...e, done: false }))); try { await api.clearLogs("workout"); } catch { /* ok */ } loadStats(); };
+  const resetMeals = async () => { setMeals((ms) => ms.map((m) => ({ ...m, done: false }))); try { await api.clearLogs("meal"); } catch { /* ok */ } loadStats(); };
 
   const mealsDone = meals.filter((m) => m.done).length;
   const exDone = exercises.filter((e) => e.done).length;
@@ -84,8 +108,13 @@ export default function Dashboard() {
           <h1 style={{ fontSize: "22px", fontWeight: "600", color: "var(--text)" }}>Good morning, George 👋</h1>
           <p style={{ fontSize: "13px", color: "var(--text3)", marginTop: "2px" }}>{today} · Stay hydrated today</p>
         </div>
-        <div title={stats ? `Longest streak: ${stats.longest_streak} days · ${stats.active_days_this_week} active days this week` : ""} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--amber-bg)", color: "var(--amber-text)", fontSize: "13px", fontWeight: "500", padding: "6px 14px", borderRadius: "20px" }}>
-          <Flame size={15} /> {stats ? (stats.current_streak > 0 ? `${stats.current_streak}-day streak` : "Start a streak today!") : "…"}
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button onClick={resetAll} disabled={resetting} title="Clear today's data and start fresh" style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--surface)", color: "var(--text2)", border: "0.5px solid var(--border)", borderRadius: "20px", padding: "6px 12px", fontSize: "12.5px", fontWeight: "500", cursor: resetting ? "default" : "pointer", opacity: resetting ? 0.6 : 1 }}>
+            <RotateCcw size={13} /> {resetting ? "Resetting…" : "Reset"}
+          </button>
+          <div title={stats ? `Longest streak: ${stats.longest_streak} days · ${stats.active_days_this_week} active days this week` : ""} style={{ display: "flex", alignItems: "center", gap: "6px", background: "var(--amber-bg)", color: "var(--amber-text)", fontSize: "13px", fontWeight: "500", padding: "6px 14px", borderRadius: "20px" }}>
+            <Flame size={15} /> {stats ? (stats.current_streak > 0 ? `${stats.current_streak}-day streak` : "Start a streak today!") : "…"}
+          </div>
         </div>
       </div>
 
@@ -96,8 +125,9 @@ export default function Dashboard() {
           value={timer.formattedElapsed}
           sub={timer.breakDue ? "Break is due!" : `Next break in ${timer.formattedRemaining}`}
           color="var(--amber)"
+          onReset={resetSitting}
         />
-        <MetricCard icon={Droplets} label="Hydration" value={`${water.toFixed(2)}L`} sub={`Goal: ${HYDRATION_GOAL}L`} color="var(--accent)">
+        <MetricCard icon={Droplets} label="Hydration" value={`${water.toFixed(2)}L`} sub={`Goal: ${HYDRATION_GOAL}L`} color="var(--accent)" onReset={resetWater}>
           <div style={{ display: "flex", gap: "6px", marginTop: "10px" }}>
             <button onClick={() => addWater(-0.25)} style={waterBtn}><Minus size={13} /></button>
             <button onClick={() => addWater(0.25)} style={waterBtn}><Plus size={13} /></button>
@@ -106,8 +136,8 @@ export default function Dashboard() {
             </div>
           </div>
         </MetricCard>
-        <MetricCard icon={Dumbbell} label="Workouts" value={`${exDone} / ${exercises.length}`} sub="Today's session" />
-        <MetricCard icon={Salad} label="Meals logged" value={`${mealsDone} / ${meals.length}`} sub={nextMeal ? `${nextMeal.time} pending` : "All done 🎉"} />
+        <MetricCard icon={Dumbbell} label="Workouts" value={`${exDone} / ${exercises.length}`} sub="Today's session" onReset={resetWorkouts} />
+        <MetricCard icon={Salad} label="Meals logged" value={`${mealsDone} / ${meals.length}`} sub={nextMeal ? `${nextMeal.time} pending` : "All done 🎉"} onReset={resetMeals} />
       </div>
 
       <div style={{ background: "var(--amber-bg)", borderRadius: "12px", padding: "14px 16px", display: "flex", alignItems: "center", gap: "12px" }}>

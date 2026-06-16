@@ -25,6 +25,7 @@ export const api = {
   log: (entry) => request("/log", { method: "POST", body: entry }),
   getLogs: () => request("/log"),
   deleteLog: (id) => request(`/log/${id}`, { method: "DELETE" }),
+  clearLogs: (type) => request(`/log${type ? `?type=${type}` : ""}`, { method: "DELETE" }),
   weeklyReport: () => request("/report/weekly"),
   stats: () => request("/stats"),
 

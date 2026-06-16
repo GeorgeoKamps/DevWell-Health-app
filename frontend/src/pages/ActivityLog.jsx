@@ -63,7 +63,9 @@ export default function ActivityLog() {
     }
   };
 
-  const logs = [...apiLogs, ...seedLogs].filter((l) => !removed[l.id]);
+  // Online: show the real activity from the API (empty = a genuine fresh start).
+  // Offline only: fall back to sample rows so the page isn't blank in a demo with no backend.
+  const logs = (offline ? seedLogs : apiLogs).filter((l) => !removed[l.id]);
   const remove = async (id) => {
     if (typeof id === "string" && id.startsWith("api-")) {
       try {
